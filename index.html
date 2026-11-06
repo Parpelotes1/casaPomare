@@ -2507,6 +2507,26 @@ html.tema-escuro .faixa-fechado { background: rgba(255,255,255,0.06); color: #FF
 document.addEventListener('DOMContentLoaded', function () {
 
   var PRODUTOS = [];
+
+  fetch('/api/produtos')
+    .then(function(r){ return r.json(); })
+    .then(function(lista){
+      if (!Array.isArray(lista)) return;
+      PRODUTOS = lista.map(function(p){
+        return {
+          id: String(p.id),
+          nome: p.nome,
+          desc: p.descricao || '',
+          preco: p.preco_centavos,
+          cat: p.categoria || 'Outros',
+          gradiente: 'linear-gradient(135deg,#E63B36,#F5B8C4)',
+          imagem: p.imagem_url || null
+        };
+      });
+      renderProdutos();
+    })
+    .catch(function(e){ console.error('Erro ao carregar produtos', e); });
+
   var CHAVE = 'doces_carrinho';
   var carrinho = [];
   try {
