@@ -2251,36 +2251,6 @@ html.tema-escuro .faixa-fechado { background: rgba(255,255,255,0.06); color: #FF
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
-   /* --- Correção de performance mobile --- */
-
-/* 1. Neutraliza backdrop-filter em telas pequenas */
-@media (max-width: 768px) {
-  html.tema-escuro .modal-caixa {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: rgba(28,18,32,0.96) !important;
-  }
-}
-
-/* 2. Desliga animações pesadas no mobile */
-@media (max-width: 768px) {
-  html.tema-escuro .modal-caixa {
-    animation: none !important;
-  }
-  .hero h1,
-  html.tema-escuro .hero h1 {
-    animation: none !important;
-    background-position: 0% 50% !important;
-  }
-}
-
-/* 3. Respeita reduced-motion globalmente */
-@media (prefers-reduced-motion: reduce) {
-  html.tema-escuro .modal-caixa {
-    animation: none !important;
-    backdrop-filter: none !important;
-  }
-}
 </style>
 </head>
 <body>
@@ -2892,21 +2862,6 @@ document.addEventListener('DOMContentLoaded', function () {
     linhas.push('Entrega: ' + entregaTipo);
     if (entregaTipo === 'Entrega') linhas.push('Endereço: ' + (endereco || 'a confirmar'));
     linhas.push('Observações: ' + (obs || 'nenhuma'));
-         fetch('/api/pedido', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-      body: JSON.stringify({
-        cliente_nome: null,
-        cliente_telefone: null,
-        tipo_entrega: entregaTipo === 'Entrega' ? 'entrega' : 'retirada',
-        endereco: entregaTipo === 'Entrega' ? (endereco || null) : null,
-        observacoes: obs || null,
-        itens: carrinho.map(function(i){
-          return { nome: i.nome, qtd: i.qtd, preco_centavos: i.preco };
-        })
-      })
-    }).catch(function(e){ console.error('Erro ao gravar pedido', e); });
     var url = 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
     window.open(url, '_blank', 'noopener');
     if (window.skipUI) window.skipUI.toast('Pedido pronto para envio no WhatsApp', { type: 'success' });
