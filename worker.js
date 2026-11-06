@@ -10,7 +10,7 @@ export default {
     };
 
     if (request.method === 'OPTIONS') {
-      if (url.pathname === '/api/pedidos' && req.method === 'POST') {
+    if (url.pathname === '/api/pedidos' && req.method === 'POST') {
   try {
     const b = await req.json();
     if (!Array.isArray(b.itens) || b.itens.length === 0) {
@@ -36,9 +36,10 @@ export default {
 
 if (url.pathname === '/api/pedidos' && req.method === 'GET') {
   const { results } = await env.DB.prepare(
-    `SELECT * FROM pedidos ORDER BY id DESC LIMIT 200`
+    'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
   ).all();
   return json(results);
+}
 }
       return new Response(null, { headers: cors });
     }
