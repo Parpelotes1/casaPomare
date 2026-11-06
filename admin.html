@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Painel — Casa Pomarê</title>
+<style>
+:root{
+  --vidro: rgba(255,255,255,.10);
+  --vidro-alto: rgba(255,255,255,.18);
+  --borda: rgba(255,255,255,.28);
+  --borda-alta: rgba(255,255,255,.45);
+  --texto: #fff;
+  --texto-suave: rgba(255,255,255,.72);
+  --sombra: 0 18px 50px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.25);
+  --r: 22px;
+  --acento: #f0c9a4;
+  --acento-2: #d89a6a;
+  --ok: #4ade80;
+  --erro: #f87171;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:var(--texto);
+  min-height:100vh;
+  background:#1a0f0a;
+  overflow-x:hidden;
+  position:relative;
+}
+body::before{
+  content:'';
+  position:fixed;inset:-20%;
+  background:
+    radial-gradient(circle at 18% 12%, #c4713f 0%, transparent 42%),
+    radial-gradient(circle at 82% 22%, #8a3f5c 0%, transparent 46%),
+    radial-gradient(circle at 30% 88%, #d9a35f 0%, transparent 40%),
+    radial-gradient(circle at 78% 82%, #4a2820 0%, transparent 50%),
+    linear-gradient(160deg,#2a1710 0%,#1a0f0a 55%,#120a07 100%);
+  filter:blur(0px);
+  z-index:-2;
+}
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:-1;
+  opacity:.8;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 90px;position:relative;z-index:1}
+
+.vidro{
+  background:linear-gradient(155deg, rgba(255,255,255,.16), rgba(255,255,255,.06) 45%, rgba(255,255,255,.11));
+  backdrop-filter:blur(28px) saturate(165%);
+  -webkit-backdrop-filter:blur(28px) saturate(165%);
+  border:1px solid var(--borda);
+  border-radius:var(--r);
+  box-shadow:var(--sombra), inset 0 1px 0 rgba(255,255,255,.42), inset 0 -1px 0 rgba(0,0,0,.18);
+  position:relative;
+  overflow:hidden;
+}
+.vidro::before{
+  content:'';
+  position:absolute;
+  top:-60%;left:-30%;
+  width:80%;height:220%;
+  background:linear-gradient(105deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,.05) 35%, transparent 60%);
+  transform:rotate(8deg);
+  pointer-events:none;
+  opacity:.55;
+}
+
+header{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 18px;margin-bottom:18px;
+}
+header .logo{
+  width:52px;height:52px;border-radius:16px;object-fit:cover;
+  border:1px solid var(--borda-alta);
+  box-shadow:0 8px 22px rgba(0,0,0,.4);
+  flex-shrink:0;
+}
+header h1{font-size:1.12rem;margin:0;font-weight:650;letter-spacing:-.02em}
+header p{margin:2px 0 0;font-size:.78rem;color:var(--texto-suave)}
+header .flex{flex:1;min-width:0}
+header .flex h1,header .flex p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.btn-sair{
+  background:rgba(255,255,255,.10);border:1px solid var(--borda);
+  color:var(--texto);padding:10px 15px;border-radius:14px;
+  font-size:.82rem;font-weight:600;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+}
+.btn-sair:active{transform:scale(.96);background:rgba(255,255,255,.2)}
+
+.tela{display:none;animation:entra .45s cubic-bezier(.22,1,.36,1)}
+.tela.ativa{display:block}
+@keyframes entra{
+  from{opacity:0;transform:translateY(14px) scale(.985)}
+  to{opacity:1;transform:none}
+}
+
+.login-card{padding:34px 26px 30px;max-width:420px;margin:8vh auto 0}
+.login-card .ico{
+  width:64px;height:64px;border-radius:20px;margin:0 auto 18px;
+  display:grid;place-items:center;font-size:1.7rem;
+  background:linear-gradient(140deg, var(--acento), var(--acento-2));
+  box-shadow:0 12px 30px rgba(216,154,106,.4);
+}
+.login-card h2{text-align:center;margin:0 0 6px;font-size:1.32rem;font-weight:650;letter-spacing:-.02em}
+.login-card .sub{text-align:center;margin:0 0 26px;font-size:.85rem;color:var(--texto-suave);line-height:1.5}
+
+.campo{margin-bottom:16px}
+.campo label{
+  display:block;font-size:.76rem;font-weight:600;
+  margin-bottom:7px;color:var(--texto-suave);
+  text-transform:uppercase;letter-spacing:.07em;
+}
+.campo input,.campo textarea,.campo select{
+  width:100%;padding:14px 16px;
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:14px;
+  color:var(--texto);font-size:.94rem;font-family:inherit;
+  transition:.22s;
+  outline:none;
+}
+.campo input::placeholder,.campo textarea::placeholder{color:rgba(255,255,255,.35)}
+.campo input:focus,.campo textarea:focus,.campo select:focus{
+  border-color:var(--acento);
+  background:rgba(0,0,0,.30);
+  box-shadow:0 0 0 3px rgba(240,201,164,.14);
+}
+.campo textarea{resize:vertical;min-height:78px;line-height:1.55}
+.campo select option{background:#2a1710;color:#fff}
+.linha{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 22px;border-radius:15px;border:none;
+  font-size:.92rem;font-weight:650;font-family:inherit;
+  cursor:pointer;transition:.2s;width:100%;
+  letter-spacing:-.01em;
+}
+.btn-primario{
+  background:linear-gradient(140deg, var(--acento), var(--acento-2));
+  color:#2a1710;
+  box-shadow:0 10px 26px rgba(216,154,106,.35), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.btn-primario:active{transform:scale(.975);box-shadow:0 4px 14px rgba(216,154,106,.3)}
+.btn-primario:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-vidro{
+  background:rgba(255,255,255,.10);
+  border:1px solid var(--borda);
+  color:var(--texto);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.btn-vidro:active{transform:scale(.975);background:rgba(255,255,255,.18)}
+.btn-mini{
+  width:auto;padding:9px 14px;font-size:.78rem;border-radius:11px;
+  border:1px solid var(--borda);background:rgba(255,255,255,.09);
+  color:var(--texto);cursor:pointer;font-family:inherit;font-weight:600;
+  transition:.18s;
+}
+.btn-mini:active{transform:scale(.94)}
+.btn-mini.perigo{border-color:rgba(248,113,113,.45);color:#fca5a5;background:rgba(248,113,113,.12)}
+
+.abas{
+  display:flex;gap:6px;padding:6px;margin-bottom:18px;
+  background:rgba(255,255,255,.07);
+  border:1px solid var(--borda);
+  border-radius:18px;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  overflow-x:auto;scrollbar-width:none;
+}
+.abas::-webkit-scrollbar{display:none}
+.aba{
+  flex:1;min-width:max-content;
+  padding:12px 16px;border-radius:13px;border:none;
+  background:transparent;color:var(--texto-suave);
+  font-size:.85rem;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:.25s;white-space:nowrap;
+}
+.aba.ativa{
+  background:linear-gradient(140deg, rgba(255,255,255,.24), rgba(255,255,255,.10));
+  color:var(--texto);
+  box-shadow:0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.painel{display:none}
+.painel.ativo{display:block;animation:entra .4s cubic-bezier(.22,1,.36,1)}
+.bloco{padding:22px;margin-bottom:16px}
+.bloco h3{
+  margin:0 0 4px;font-size:1.02rem;font-weight:650;letter-spacing:-.02em;
+  display:flex;align-items:center;gap:9px;
+}
+.bloco .dica{margin:0 0 18px;font-size:.8rem;color:var(--texto-suave);line-height:1.5}
+.divisor{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);margin:18px 0}
+
+.upload-area{
+  display:flex;align-items:center;gap:14px;
+  padding:14px;border-radius:16px;
+  border:1.5px dashed rgba(255,255,255,.28);
+  background:rgba(0,0,0,.16);
+  cursor:pointer;transition:.22s;
+}
+.upload-area:active{border-color:var(--acento);background:rgba(0,0,0,.26)}
+.upload-area .prev{
+  width:64px;height:64px;border-radius:13px;flex-shrink:0;
+  background:rgba(255,255,255,.07);
+  display:grid;place-items:center;font-size:1.35rem;
+  overflow:hidden;border:1px solid rgba(255,255,255,.16);
+}
+.upload-area .prev img{width:100%;height:100%;object-fit:cover}
+.upload-area .txt{flex:1;min-width:0}
+.upload-area .txt b{display:block;font-size:.86rem;font-weight:600}
+.upload-area .txt span{font-size:.74rem;color:var(--texto-suave)}
+
+.item{
+  display:flex;gap:13px;align-items:center;
+  padding:13px;border-radius:17px;margin-bottom:10px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.13);
+  transition:.2s;
+}
+.item:active{background:rgba(255,255,255,.10)}
+.item .foto{
+  width:58px;height:58px;border-radius:13px;flex-shrink:0;
+  object-fit:cover;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);
+  display:grid;place-items:center;font-size:1.2rem;color:rgba(255,255,255,.35);
+}
+.item .info{flex:1;min-width:0}
+.item .info b{
+  display:block;font-size:.91rem;font-weight:620;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-bottom:3px;
+}
+.item .info .meta{
+  font-size:.76rem;color:var(--texto-suave);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+}
+.item .info .preco{color:var(--acento);font-weight:650}
+.item .acoes{display:flex;gap:6px;flex-shrink:0}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:8px;font-size:.68rem;font-weight:650;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.badge.on{background:rgba(74,222,128,.16);color:#86efac;border:1px solid rgba(74,222,128,.3)}
+.badge.off{background:rgba(248,113,113,.14);color:#fca5a5;border:1px solid rgba(248,113,113,.28)}
+
+.vazio{
+  text-align:center;padding:44px 20px;color:var(--texto-suave);
+}
+.vazio .ico{font-size:2.4rem;margin-bottom:12px;opacity:.5}
+.vazio p{margin:0;font-size:.86rem;line-height:1.6}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,120%);
+  padding:14px 22px;border-radius:16px;
+  background:rgba(30,18,12,.92);
+  border:1px solid var(--borda-alta);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  font-size:.86rem;font-weight:600;
+  box-shadow:0 16px 44px rgba(0,0,0,.5);
+  transition:transform .4s cubic-bezier(.22,1,.36,1);
+  z-index:999;max-width:90vw;text-align:center;
+}
+.toast.show{transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(74,222,128,.4)}
+.toast.err{border-color:rgba(248,113,113,.45)}
+
+.status-loja{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:14px;padding:16px 18px;border-radius:17px;
+  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.14);
+  margin-bottom:16px;
+}
+.status-loja .txt b{display:block;font-size:.92rem;margin-bottom:2px}
+.status-loja .txt span{font-size:.76rem;color:var(--texto-suave)}
+
+.switch{
+  width:56px;height:32px;border-radius:99px;flex-shrink:0;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.2);
+  position:relative;cursor:pointer;transition:.3s;
+  padding:0;
+}
+.switch::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:24px;height:24px;border-radius:50%;
+  background:#fff;transition:.3s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 2px 6px rgba(0,0,0,.35);
+}
+.switch.on{background:linear-gradient(140deg,var(--ok),#22c55e);border-color:transparent}
+.switch.on::after{left:29px}
+
+.pedido{
+  padding:16px;border-radius:17px;margin-bottom:11px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.13);
+}
+.pedido .topo{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:10px;margin-bottom:9px;
+}
+.pedido .topo b{font-size:.92rem;font-weight:640}
+.pedido .topo .quando{font-size:.72rem;color:var(--texto-suave);display:block;margin-top:2px}
+.pedido .total{color:var(--acento);font-weight:700;font-size:.96rem;white-space:nowrap}
+.pedido .itens{
+  font-size:.79rem;color:var(--texto-suave);line-height:1.65;
+  margin-bottom:10px;padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.09);
+}
+.pedido .obs{
+  font-size:.78rem;color:#f0c9a4;background:rgba(240,201,164,.09);
+  padding:8px 11px;border-radius:10px;margin-bottom:10px;
+  border-left:2px solid var(--acento);
+}
+.pedido .rodape{display:flex;gap:7px;flex-wrap:wrap}
+
+.selo{
+  padding:4px 10px;border-radius:9px;font-size:.7rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.selo.novo{background:rgba(96,165,250,.18);color:#93c5fd;border:1px solid rgba(96,165,250,.3)}
+.selo.em_preparo{background:rgba(251,191,36,.16);color:#fcd34d;border:1px solid rgba(251,191,36,.3)}
+.selo.entregue{background:rgba(74,222,128,.16);color:#86efac;border:1px solid rgba(74,222,128,.3)}
+.selo.cancelado{background:rgba(248,113,113,.14);color:#fca5a5;border:1px solid rgba(248,113,113,.28)}
+
+.modal-fundo{
+  position:fixed;inset:0;z-index:800;
+  background:rgba(10,6,4,.62);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.modal-fundo.show{display:flex;animation:entra .3s ease}
+.modal{
+  width:100%;max-width:400px;padding:26px 22px;
+  animation:sobe .38s cubic-bezier(.22,1,.36,1);
+}
+@keyframes sobe{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.modal h3{margin:0 0 8px;font-size:1.06rem;font-weight:650;text-align:center}
+.modal p{margin:0 0 22px;font-size:.85rem;color:var(--texto-suave);text-align:center;line-height:1.55}
+.modal .botoes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.spinner{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(0,0,0,.22);border-top-color:#2a1710;
+  animation:gira .7s linear infinite;
+}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+.rodape-info{
+  text-align:center;font-size:.71rem;color:rgba(255,255,255,.34);
+  padding:26px 0 6px;letter-spacing:.02em;
+}
+
+@media(max-width:520px){
+  .wrap{padding:14px 13px 80px}
+  header{padding:13px 14px;gap:11px}
+  header .logo{width:44px;height:44px;border-radius:13px}
+  header h1{font-size:1rem}
+  .bloco{padding:17px}
+  .linha{grid-template-columns:1fr}
+  .item{padding:11px;gap:10px}
+  .item .foto{width:50px;height:50px}
+  .aba{padding:11px 13px;font-size:.8rem}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="vidro" id="topo" style="display:none">
+    <img src="logo.jpeg" alt="Casa Pomarê" class="logo" onerror="this.style.display='none'">
+    <div class="flex">
+      <h1>Casa Pomarê</h1>
+      <p>Painel de controle</p>
+    </div>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </header>
+
+  <section class="tela ativa" id="telaLogin">
+    <div class="vidro login-card">
+      <div class="ico">&#128274;</div>
+      <h2>Painel da loja</h2>
+      <p class="sub">Digite a senha de administrador para liberar o acesso.</p>
+      <form onsubmit="entrar(event)">
+        <div class="campo">
+          <label>Senha</label>
+          <input type="password" id="senha" placeholder="Cole aqui a sua senha" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primario" type="submit" id="btnEntrar">Entrar</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="tela" id="telaAdmin">
+
+    <div class="abas">
+      <button class="aba ativa" onclick="trocarAba('produtos',this)">Produtos</button>
+      <button class="aba" onclick="trocarAba('pedidos',this)">Pedidos</button>
+      <button class="aba" onclick="trocarAba('config',this)">Configurações</button>
+    </div>
+
+    <div class="painel ativo" id="painelProdutos">
+
+      <div class="vidro bloco">
+        <h3><span id="formTitulo">Novo produto</span></h3>
+        <p class="dica">Preencha e clique em salvar. O produto aparece no site na hora.</p>
+
+        <form onsubmit="salvarProduto(event)">
+          <div class="campo">
+            <label>Foto do produto</label>
+            <div class="upload-area" onclick="document.getElementById('fileFoto').click()">
+              <div class="prev" id="prevFoto">&#128247;</div>
+              <div class="txt">
+                <b>Toque para escolher a foto</b>
+                <span>JPG ou PNG, até 5 MB</span>
+              </div>
+            </div>
+            <input type="file" id="fileFoto" accept="image/*" style="display:none" onchange="subirFoto(this)">
+          </div>
+
+          <div class="campo">
+            <label>Nome do produto</label>
+            <input type="text" id="nome" placeholder="Ex: Bolo de cenoura com ganache" required>
+          </div>
+
+          <div class="campo">
+            <label>Descrição</label>
+            <textarea id="descricao" placeholder="Ex: Bolo caseiro, cobertura de chocolate meio amargo"></textarea>
+          </div>
+
+          <div class="linha">
+            <div class="campo">
+              <label>Preço (R$)</label>
+              <input type="text" id="preco" placeholder="35,00" inputmode="decimal" required>
+            </div>
+            <div class="campo">
+              <label>Categoria</label>
+              <input type="text" id="categoria" placeholder="Bolos" list="cats">
+              <datalist id="cats">
+                <option value="Bolos">
+                <option value="Doces">
+                <option value="Salgados">
+                <option value="Bebidas">
+                <option value="Tortas">
+              </datalist>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label>Ordem de exibição</label>
+            <input type="number" id="ordem" placeholder="0" value="0">
+          </div>
+
+          <button class="btn btn-primario" type="submit" id="btnSalvar">Salvar produto</button>
+          <button class="btn btn-vidro" type="button" id="btnCancelarEdit" style="display:none;margin-top:9px" onclick="cancelarEdicao()">Cancelar edição</button>
+        </form>
+      </div>
+
+      <div class="vidro bloco">
+        <h3>Produtos cadastrados <span style="font-size:.76rem;font-weight:500;color:var(--texto-suave);margin-left:auto" id="contadorProd">0</span></h3>
+        <div id="listaProdutos"></div>
+      </div>
+
+    </div>
+
+    <div class="painel" id="painelPedidos">
+      <div class="vidro bloco">
+        <h3>Pedidos recebidos</h3>
+        <p class="dica">Os 200 pedidos mais recentes. Toque em um status para atualizar.</p>
+        <div id="listaPedidos"></div>
+      </div>
+    </div>
+
+    <div class="painel" id="painelConfig">
+
+      <div class="vidro bloco">
+        <h3>Loja aberta ou fechada</h3>
+        <p class="dica">Quando fechada, o cliente vê um aviso e não consegue finalizar pedidos.</p>
+        <div class="status-loja">
+          <div class="txt">
+            <b id="txtStatusLoja">Loja aberta</b>
+            <span id="txtStatusSub">Recebendo pedidos normalmente</span>
+          </div>
+          <button class="switch" id="swLoja" onclick="toggleLoja()"></button>
+        </div>
+      </div>
+
+      <div class="vidro bloco">
+        <h3>Dados da loja</h3>
+        <p class="dica">Essas informações aparecem no site e nos pedidos.</p>
+        <form onsubmit="salvarConfig(event)">
+          <div class="campo">
+            <label>WhatsApp (só números, com 55)</label>
+            <input type="tel" id="cfgWhats" placeholder="5516992874030" inputmode="numeric">
+          </div>
+          <div class="campo">
+            <label>Horário de funcionamento</label>
+            <input type="text" id="cfgHorario" placeholder="Ter a Dom, 14h às 22h">
+          </div>
+          <div class="campo">
+            <label>Endereço</label>
+            <input type="text" id="cfgEndereco" placeholder="Rua 26, 670A - Paineira">
+          </div>
+          <div class="campo">
+            <label>Chave Pix</label>
+            <input type="text" id="cfgPix" placeholder="CPF, telefone ou e-mail">
+          </div>
+          <div class="campo">
+            <label>Aviso no topo do site</label>
+            <input type="text" id="cfgAviso" placeholder="Ex: Encomendas com 2 dias de antecedência">
+          </div>
+          <button class="btn btn-primario" type="submit" id="btnSalvarCfg">Salvar configurações</button>
+        </form>
+      </div>
+
+      <div class="vidro bloco">
+        <h3>Backup</h3>
+        <p class="dica">Baixa um arquivo com todos os produtos, configurações e pedidos. Guarde em um lugar seguro.</p>
+        <button class="btn btn-vidro" onclick="baixarBackup()" id="btnBackup">Baixar backup completo</button>
+      </div>
+
+    </div>
+
+  </section>
+
+  <p class="rodape-info">Casa Pomarê &middot; painel administrativo</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-fundo" id="modal">
+  <div class="vidro modal">
+    <h3 id="modalTitulo">Confirmar</h3>
+    <p id="modalTexto">Tem certeza?</p>
+    <div class="botoes">
+      <button class="btn btn-vidro" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primario" id="modalConfirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://casapomare.polllomarcelo.workers.dev';
+let token = localStorage.getItem('cp_token') || '';
+let produtos = [];
+let editandoId = null;
+let fotoUrl = null;
+let fotoSubindo = false;
+let config = {};
+
+const $ = id => document.getElementById(id);
+const brl = c => 'R$ ' + (Number(c||0)/100).toFixed(2).replace('.',',');
+
+function toast(msg, tipo){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo||'');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'toast ' + (tipo||''), 3200);
+}
+
+async function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers, { 'Authorization': 'Bearer ' + token });
+  const r = await fetch(API + path, opts);
+  let data = null;
+  try { data = await r.json(); } catch(e){}
+  if(r.status === 401){
+    sair();
+    throw new Error('Sessão expirada.');
+  }
+  if(!r.ok) throw new Error((data && (data.erro || data.error)) || 'Erro ' + r.status);
+  return data;
+}
+
+async function entrar(e){
+  e.preventDefault();
+  const senha = $('senha').value.trim();
+  if(!senha) return;
+  const btn = $('btnEntrar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Verificando';
+  token = senha;
+  try{
+    await api('/api/admin/produtos');
+    localStorage.setItem('cp_token', senha);
+    abrirAdmin();
+    iniciarTudo();
+  }catch(err){
+    token = '';
+    toast('Senha incorreta.', 'err');
+    $('senha').value = '';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+function sair(){
+  token = '';
+  localStorage.removeItem('cp_token');
+  $('telaLogin').classList.add('ativa');
+  $('telaAdmin').classList.remove('ativa');
+  $('topo').style.display = 'none';
+  $('senha').value = '';
+}
+
+function abrirAdmin(){
+  $('telaLogin').classList.remove('ativa');
+  $('telaAdmin').classList.add('ativa');
+  $('topo').style.display = 'flex';
+  $('senha').value = '';
+}
+
+function trocarAba(nome, el){
+  document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
+  el.classList.add('ativa');
+  document.querySelectorAll('.painel').forEach(p => p.classList.remove('ativo'));
+  const mapa = { produtos:'painelProdutos', pedidos:'painelPedidos', config:'painelConfig' };
+  $(mapa[nome]).classList.add('ativo');
+  if(nome === 'pedidos') carregarPedidos();
+}
+
+async function carregarProdutos(){
+  try{
+    produtos = await api('/api/admin/produtos');
+    renderProdutos();
+  }catch(err){ toast(err.message, 'err'); }
+}
+
+function renderProdutos(){
+  const box = $('listaProdutos');
+  $('contadorProd').textContent = produtos.length;
+  if(!produtos.length){
+    box.innerHTML = '<div class="vazio"><div class="ico">&#128230;</div><p>Nenhum produto ainda.<br>Adicione o primeiro acima.</p></div>';
+    return;
+  }
+  box.innerHTML = produtos.map(p => `
+    <div class="item">
+      ${p.imagem_url
+        ? `<img class="foto" src="${p.imagem_url}" alt="" loading="lazy">`
+        : `<div class="foto">&#127850;</div>`}
+      <div class="info">
+        <b>${esc(p.nome)}</b>
+        <div class="meta">
+          <span class="preco">${brl(p.preco_centavos)}</span>
+          <span>${esc(p.categoria||'Outros')}</span>
+          <span class="badge ${p.ativo ? 'on' : 'off'}">${p.ativo ? 'Ativo' : 'Oculto'}</span>
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn-mini" onclick="editarProduto(${p.id})">Editar</button>
+        <button class="btn-mini perigo" onclick="excluirProduto(${p.id})">&#128465;</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function editarProduto(id){
+  const p = produtos.find(x => x.id === id);
+  if(!p) return;
+  editandoId = id;
+  $('formTitulo').textContent = 'Editando: ' + p.nome;
+  $('nome').value = p.nome || '';
+  $('descricao').value = p.descricao || '';
+  $('preco').value = (Number(p.preco_centavos||0)/100).toFixed(2).replace('.',',');
+  $('categoria').value = p.categoria || '';
+  $('ordem').value = p.ordem || 0;
+  fotoUrl = p.imagem_url || null;
+  $('prevFoto').innerHTML = fotoUrl ? `<img src="${fotoUrl}" alt="">` : '&#128247;';
+  $('btnSalvar').textContent = 'Salvar alterações';
+  $('btnCancelarEdit').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelarEdicao(){
+  editandoId = null;
+  fotoUrl = null;
+  $('formTitulo').textContent = 'Novo produto';
+  $('nome').value = '';
+  $('descricao').value = '';
+  $('preco').value = '';
+  $('categoria').value = '';
+  $('ordem').value = 0;
+  $('prevFoto').innerHTML = '&#128247;';
+  $('btnSalvar').textContent = 'Salvar produto';
+  $('btnCancelarEdit').style.display = 'none';
+}
+
+async function subirFoto(input){
+  const arq = input.files && input.files[0];
+  if(!arq) return;
+  if(arq.size > 5*1024*1024){ toast('A foto pode ter no máximo 5 MB.', 'err'); input.value=''; return; }
+  fotoSubindo = true;
+  $('prevFoto').innerHTML = '<span class="spinner"></span>';
+  try{
+    const fd = new FormData();
+    fd.append('imagem', arq);
+    const r = await fetch(API + '/api/admin/upload', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer ' + token },
+      body: fd
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.erro || 'Falha no envio');
+    fotoUrl = d.url;
+    $('prevFoto').innerHTML = `<img src="${d.url}" alt="">`;
+    toast('Foto enviada.', 'ok');
+  }catch(err){
+    $('prevFoto').innerHTML = '&#128247;';
+    toast(err.message, 'err');
+  }finally{
+    fotoSubindo = false;
+    input.value = '';
+  }
+}
+
+async function salvarProduto(e){
+  e.preventDefault();
+  if(fotoSubindo){ toast('Espere a foto terminar de subir.', 'err'); return; }
+  const btn = $('btnSalvar');
+  const precoTxt = $('preco').value.replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
+  const centavos = Math.round(parseFloat(precoTxt || '0') * 100);
+
+  const corpo = {
+    nome: $('nome').value.trim(),
+    descricao: $('descricao').value.trim(),
+    preco_centavos: centavos,
+    categoria: $('categoria').value.trim() || 'Outros',
+    imagem_url: fotoUrl,
+    ativo: true,
+    ordem: Number($('ordem').value) || 0
+  };
+  if(!corpo.nome){ toast('O nome é obrigatório.', 'err'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando';
+  try{
+    if(editandoId){
+      await api('/api/admin/produtos/' + editandoId, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(corpo)
+      });
+      toast('Produto atualizado.', 'ok');
+    }else{
+      await api('/api/admin/produtos', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(corpo)
+      });
+      toast('Produto adicionado.', 'ok');
+    }
+    cancelarEdicao();
+    await carregarProdutos();
+  }catch(err){
+    toast(err.message, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = editandoId ? 'Salvar alterações' : 'Salvar produto';
+  }
+}
+
+function excluirProduto(id){
+  const p = produtos.find(x => x.id === id);
+  $('modalTitulo').textContent = 'Excluir produto';
+  $('modalTexto').textContent = 'Remover "' + (p ? p.nome : 'este produto') + '"? A foto também será apagada.';
+  $('modalConfirmar').textContent = 'Excluir';
+  $('modalConfirmar').onclick = async () => {
+    fecharModal();
+    try{
+      await api('/api/admin/produtos/' + id, { method:'DELETE' });
+      toast('Produto excluído.', 'ok');
+      await carregarProdutos();
+    }catch(err){ toast(err.message, 'err'); }
+  };
+  $('modal').classList.add('show');
+}
+
+function fecharModal(){ $('modal').classList.remove('show'); }
+
+async function carregarPedidos(){
+  const box = $('listaPedidos');
+  box.innerHTML = '<div class="vazio"><span class="spinner" style="border-color:rgba(255,255,255,.2);border-top-color:#fff"></span></div>';
+  try{
+    const lista = await api('/api/admin/pedidos');
+    if(!lista.length){
+      box.innerHTML = '<div class="vazio"><div class="ico">&#128203;</div><p>Nenhum pedido ainda.</p></div>';
+      return;
+    }
+    const nomes = { novo:'Novo', em_preparo:'Em preparo', entregue:'Entregue', cancelado:'Cancelado' };
+    box.innerHTML = lista.map(p => {
+      let itens = [];
+      try{ itens = JSON.parse(p.itens_json || '[]'); }catch(e){}
+      const itensTxt = itens.map(i => `${i.qtd || 1}x ${esc(i.nome || '')}`).join(' · ');
+      const data = p.criado_em ? new Date(p.criado_em.replace(' ','T') + 'Z').toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+      return `
+        <div class="pedido">
+          <div class="topo">
+            <div>
+              <b>${esc(p.cliente_nome || 'Cliente')}</b>
+              <span class="quando">${data}${p.cliente_telefone ? ' · ' + esc(p.cliente_telefone) : ''}</span>
+            </div>
+            <div class="total">${brl(p.total_centavos)}</div>
+          </div>
+          <div class="itens">${itensTxt || 'Sem detalhes'}</div>
+          ${p.observacoes ? `<div class="obs">${esc(p.observacoes)}</div>` : ''}
+          ${p.tipo_entrega === 'entrega' && p.endereco ? `<div class="itens" style="border:none;padding-top:0;margin-bottom:9px">Entrega em: ${esc(p.endereco)}</div>` : ''}
+          <div class="rodape">
+            <span class="selo ${p.status||'novo'}">${nomes[p.status] || 'Novo'}</span>
+            ${p.status !== 'em_preparo' ? `<button class="btn-mini" onclick="mudarStatus(${p.id},'em_preparo')">Em preparo</button>` : ''}
+            ${p.status !== 'entregue' ? `<button class="btn-mini" onclick="mudarStatus(${p.id},'entregue')">Entregue</button>` : ''}
+            ${p.status !== 'cancelado' ? `<button class="btn-mini perigo" onclick="mudarStatus(${p.id},'cancelado')">Cancelar</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }catch(err){
+    box.innerHTML = '<div class="vazio"><p>' + esc(err.message) + '</p></div>';
+  }
+}
+
+async function mudarStatus(id, status){
+  try{
+    await api('/api/admin/pedidos/' + id, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ status })
+    });
+    toast('Status atualizado.', 'ok');
+    carregarPedidos();
+  }catch(err){ toast(err.message, 'err'); }
+}
+
+async function carregarConfig(){
+  try{
+    config = await api('/api/config');
+    $('cfgWhats').value = config.whatsapp || '';
+    $('cfgHorario').value = config.horario || '';
+    $('cfgEndereco').value = config.endereco || '';
+    $('cfgPix').value = config.pix || '';
+    $('cfgAviso').value = config.aviso || '';
+    const aberta = config.loja_aberta !== '0';
+    $('swLoja').classList.toggle('on', aberta);
+    $('txtStatusLoja').textContent = aberta ? 'Loja aberta' : 'Loja fechada';
+    $('txtStatusSub').textContent = aberta ? 'Recebendo pedidos normalmente' : 'Clientes veem aviso de fechado';
+  }catch(err){ toast(err.message, 'err'); }
+}
+
+async function toggleLoja(){
+  const sw = $('swLoja');
+  const novo = !sw.classList.contains('on');
+  sw.classList.toggle('on', novo);
+  $('txtStatusLoja').textContent = novo ? 'Loja aberta' : 'Loja fechada';
+  $('txtStatusSub').textContent = novo ? 'Recebendo pedidos normalmente' : 'Clientes veem aviso de fechado';
+  try{
+    await api('/api/admin/config', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ loja_aberta: novo ? '1' : '0' })
+    });
+    toast(novo ? 'Loja aberta.' : 'Loja fechada.', 'ok');
+  }catch(err){
+    sw.classList.toggle('on', !novo);
+    toast(err.message, 'err');
+  }
+}
+
+async function salvarConfig(e){
+  e.preventDefault();
+  const btn = $('btnSalvarCfg');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Salvando';
+  try{
+    await api('/api/admin/config', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        whatsapp: $('cfgWhats').value.trim(),
+        horario: $('cfgHorario').value.trim(),
+        endereco: $('cfgEndereco').value.trim(),
+        pix: $('cfgPix').value.trim(),
+        aviso: $('cfgAviso').value.trim()
+      })
+    });
+    toast('Configurações salvas.', 'ok');
+    await carregarConfig();
+  }catch(err){
+    toast(err.message, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Salvar configurações';
+  }
+}
+
+async function baixarBackup(){
+  const btn = $('btnBackup');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,.25);border-top-color:#fff"></span> Gerando';
+  try{
+    const dados = await api('/api/admin/backup');
+    const blob = new Blob([JSON.stringify(dados, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const hoje = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = 'backup-casa-pomare-' + hoje + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Backup baixado.', 'ok');
+  }catch(err){
+    toast(err.message, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Baixar backup completo';
+  }
+}
+
+async function iniciarTudo(){
+  await Promise.all([ carregarProdutos(), carregarConfig() ]);
+}
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') fecharModal();
+});
+
+(async function boot(){
+  if(token){
+    try{
+      await api('/api/admin/produtos');
+      abrirAdmin();
+      iniciarTudo();
+    }catch(e){
+      sair();
+    }
+  }
+})();
+</script>
+</body>
+</html>
