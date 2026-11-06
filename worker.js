@@ -103,6 +103,40 @@ export default {
 
       // ---------- ADMIN ----------
       if (path.startsWith('/api/admin/')) {
+        // ---------- PEDIDOS ----------
+if (url.pathname === '/api/pedidos' && req.method === 'POST') {
+  try {
+    const b = await req.json();
+
+    if (!Array.isArray(b.itens) || b.itens.length === 0) {
+      return json({ error: 'Pedido sem itens' }, 400);
+    }
+
+    const r = await env.DB.prepare(
+      `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
+    ).bind(
+      b.cliente_nome || '',
+      b.cliente_telefone || '',
+      b.entrega || '',
+      b.endereco || '',
+      b.observacoes || '',
+      JSON.stringify(b.itens),
+      Number(b.total_centavos) || 0
+    ).run();
+
+    return json({ ok: true, id: r.meta.last_row_id }, 201);
+  } catch (e) {
+    return json({ error: 'Erro ao gravar pedido', detalhe: String(e) }, 500);
+  }
+}
+
+if (url.pathname === '/api/pedidos' && req.method === 'GET') {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM pedidos ORDER BY id DESC LIMIT 200`
+  ).all();
+  return json(results);
+}
         if (!authOk(request)) return erro('Token invalido ou ausente.', 401);
 
         // Upload de foto do produto
