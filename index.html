@@ -345,7 +345,108 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
   z-index: 2;
 }
 .tema-toggle { display: none !important; }
+@media (max-width: 640px) {
+  .modal-container {
+    padding: 10px;
+    align-items: flex-end;
+  }
 
+  .modal-caixa {
+    max-width: 100%;
+    border-radius: 22px 22px 0 0;
+    max-height: 92dvh;
+  }
+
+  .modal-header {
+    padding: 18px 16px 10px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.5rem;
+    padding-right: 48px;
+  }
+
+  .modal-corpo {
+    padding: 6px 16px;
+  }
+
+  .modal-rodape {
+    padding: 14px 16px 20px;
+  }
+
+  .item-card {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .item-topo {
+    gap: 10px;
+  }
+
+  .item-mini {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .item-controles {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 8px 10px;
+    width: 100%;
+  }
+
+  .qtd-controle {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+
+  .subtotal {
+    grid-column: 2;
+    text-align: right;
+    font-size: 1rem;
+  }
+
+  .remover {
+    grid-column: 1 / -1;
+    justify-self: end;
+    padding: 2px 0;
+    font-size: 0.8rem;
+  }
+
+  .qtd-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .radio-grupo {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .radio-opcao {
+    height: 48px;
+  }
+
+  .input-texto,
+  .textarea-obs {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .total-linha {
+    padding: 0 2px;
+  }
+
+  .total-linha .valor-total {
+    font-size: 1.6rem;
+  }
+
+  .btn-enviar {
+    height: 52px;
+  }
+}
 </style>
 <script>
 /* Skip artifact shell — fixed helpers served beside every artifact. */
