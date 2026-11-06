@@ -1,0 +1,18 @@
+name = "casa-pomare"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Serve o index.html e demais arquivos estáticos da pasta
+[assets]
+directory = "./"
+binding = "ASSETS"
+
+# Banco de dados D1
+[[d1_databases]]
+binding = "DB"
+database_name = "casa-pomare-db"
+database_id = "55a3b780-4fba-41c5-abff-198c5604be7f"
+
+# Variáveis de ambiente
+[vars]
+WHATSAPP = "5516992874030"
