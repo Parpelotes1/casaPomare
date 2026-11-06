@@ -2251,6 +2251,36 @@ html.tema-escuro .faixa-fechado { background: rgba(255,255,255,0.06); color: #FF
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
+   /* --- Correção de performance mobile --- */
+
+/* 1. Neutraliza backdrop-filter em telas pequenas */
+@media (max-width: 768px) {
+  html.tema-escuro .modal-caixa {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(28,18,32,0.96) !important;
+  }
+}
+
+/* 2. Desliga animações pesadas no mobile */
+@media (max-width: 768px) {
+  html.tema-escuro .modal-caixa {
+    animation: none !important;
+  }
+  .hero h1,
+  html.tema-escuro .hero h1 {
+    animation: none !important;
+    background-position: 0% 50% !important;
+  }
+}
+
+/* 3. Respeita reduced-motion globalmente */
+@media (prefers-reduced-motion: reduce) {
+  html.tema-escuro .modal-caixa {
+    animation: none !important;
+    backdrop-filter: none !important;
+  }
+}
 </style>
 </head>
 <body>
