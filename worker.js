@@ -9,6 +9,40 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
+    if (request.method === 'OPTIONS') {
+      if (url.pathname === '/api/pedidos' && req.method === 'POST') {
+  try {
+    const b = await req.json();
+    if (!Array.isArray(b.itens) || b.itens.length === 0) {
+      return json({ error: 'Pedido sem itens' }, 400);
+    }
+    const r = await env.DB.prepare(
+      `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
+    ).bind(
+      b.cliente_nome || '',
+      b.cliente_telefone || '',
+      b.entrega || '',
+      b.endereco || '',
+      b.observacoes || '',
+      JSON.stringify(b.itens),
+      Number(b.total_centavos) || 0
+    ).run();
+    return json({ ok: true, id: r.meta.last_row_id }, 201);
+  } catch (e) {
+    return json({ error: 'Erro ao gravar pedido', detalhe: String(e) }, 500);
+  }
+}
+
+if (url.pathname === '/api/pedidos' && req.method === 'GET') {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM pedidos ORDER BY id DESC LIMIT 200`
+  ).all();
+  return json(results);
+}
+      return new Response(null, { headers: cors });
+    }
+
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), {
         status,
@@ -22,11 +56,40 @@ export default {
       return h === `Bearer ${env.ADMIN_TOKEN}`;
     };
 
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: cors });
-    }
+            if (path === '/api/admin/pedidos' && request.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
+          ).all();
+          return json(results);
+        }
 
+        const mPed = path.match(/^\/api\/admin\/pedidos\/(\d+)$/);
+        if (mPed && request.method === 'PATCH') {
+          const b = await request.json();
+          const status = String(b.status || '').trim();
+          const permitidos = ['novo', 'em_preparo', 'entregue', 'cancelado'];
+          if (!permitidos.includes(status)) return erro('Status invalido.');
+          await env.DB.prepare(
+            "UPDATE pedidos SET status = ? WHERE id = ?"
+          ).bind(status, Number(mPed[1])).run();
+          return json({ ok: true });
+        }
+
+        if (path === '/api/admin/backup' && request.method === 'GET') {
+          const prod = await env.DB.prepare('SELECT * FROM produtos ORDER BY id ASC').all();
+          const conf = await env.DB.prepare('SELECT chave, valor FROM config').all();
+          const ped  = await env.DB.prepare('SELECT * FROM pedidos ORDER BY id ASC').all();
+          return json({
+            ok: true,
+            gerado_em: new Date().toISOString(),
+            versao: 1,
+            produtos: prod.results,
+            config: conf.results,
+            pedidos: ped.results,
+          });
+        }
     try {
+      // ---------- PUBLICO ----------
       if (path === '/api/produtos' && request.method === 'GET') {
         const { results } = await env.DB.prepare(
           'SELECT * FROM produtos WHERE ativo = 1 ORDER BY ordem ASC, id ASC'
@@ -35,9 +98,7 @@ export default {
       }
 
       if (path === '/api/config' && request.method === 'GET') {
-        const { results } = await env.DB.prepare(
-          'SELECT chave, valor FROM config'
-        ).all();
+        const { results } = await env.DB.prepare('SELECT chave, valor FROM config').all();
         const obj = {};
         for (const r of results) obj[r.chave] = r.valor;
         return json(obj);
@@ -53,9 +114,9 @@ export default {
           0
         );
         const r = await env.DB.prepare(
-          'INSERT INTO pedidos ' +
-            '(cliente_nome, cliente_telefone, tipo_entrega, endereco, observacoes, itens_json, total_centavos) ' +
-            'VALUES (?, ?, ?, ?, ?, ?, ?)'
+          `INSERT INTO pedidos
+           (cliente_nome, cliente_telefone, tipo_entrega, endereco, observacoes, itens_json, total_centavos)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
           .bind(
             b.cliente_nome || null,
@@ -70,59 +131,45 @@ export default {
         return json({ ok: true, id: r.meta.last_row_id, total_centavos: total });
       }
 
-      if (path === '/api/pedidos' && request.method === 'GET') {
-        const { results } = await env.DB.prepare(
-          'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
-        ).all();
-        return json(results);
-      }
-
+      // ---------- ADMIN ----------
       if (path.startsWith('/api/admin/')) {
-        if (!authOk(request)) {
-          return erro('Token invalido ou ausente.', 401);
-        }
+        // ---------- PEDIDOS ----------
+if (url.pathname === '/api/pedidos' && req.method === 'POST') {
+  try {
+    const b = await req.json();
 
-        if (path === '/api/admin/pedidos' && request.method === 'GET') {
-          const { results } = await env.DB.prepare(
-            'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
-          ).all();
-          return json(results);
-        }
+    if (!Array.isArray(b.itens) || b.itens.length === 0) {
+      return json({ error: 'Pedido sem itens' }, 400);
+    }
 
-        const mPed = path.match(/^\/api\/admin\/pedidos\/(\d+)$/);
-        if (mPed && request.method === 'PATCH') {
-          const b = await request.json();
-          const status = String(b.status || '').trim();
-          const permitidos = ['novo', 'em_preparo', 'entregue', 'cancelado'];
-          if (!permitidos.includes(status)) {
-            return erro('Status invalido.');
-          }
-          await env.DB.prepare('UPDATE pedidos SET status = ? WHERE id = ?')
-            .bind(status, Number(mPed[1]))
-            .run();
-          return json({ ok: true });
-        }
+    const r = await env.DB.prepare(
+      `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
+    ).bind(
+      b.cliente_nome || '',
+      b.cliente_telefone || '',
+      b.entrega || '',
+      b.endereco || '',
+      b.observacoes || '',
+      JSON.stringify(b.itens),
+      Number(b.total_centavos) || 0
+    ).run();
 
-        if (path === '/api/admin/backup' && request.method === 'GET') {
-          const prod = await env.DB.prepare(
-            'SELECT * FROM produtos ORDER BY id ASC'
-          ).all();
-          const conf = await env.DB.prepare(
-            'SELECT chave, valor FROM config'
-          ).all();
-          const ped = await env.DB.prepare(
-            'SELECT * FROM pedidos ORDER BY id ASC'
-          ).all();
-          return json({
-            ok: true,
-            gerado_em: new Date().toISOString(),
-            versao: 1,
-            produtos: prod.results,
-            config: conf.results,
-            pedidos: ped.results,
-          });
-        }
+    return json({ ok: true, id: r.meta.last_row_id }, 201);
+  } catch (e) {
+    return json({ error: 'Erro ao gravar pedido', detalhe: String(e) }, 500);
+  }
+}
 
+if (url.pathname === '/api/pedidos' && req.method === 'GET') {
+  const { results } = await env.DB.prepare(
+    `SELECT * FROM pedidos ORDER BY id DESC LIMIT 200`
+  ).all();
+  return json(results);
+}
+        if (!authOk(request)) return erro('Token invalido ou ausente.', 401);
+
+        // Upload de foto do produto
         if (path === '/api/admin/upload' && request.method === 'POST') {
           const form = await request.formData();
           const arquivo = form.get('imagem');
@@ -135,13 +182,16 @@ export default {
           if (arquivo.size > 5 * 1024 * 1024) {
             return erro('A imagem pode ter no maximo 5 MB.');
           }
+
           const ext = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
-          const key = 'produtos/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+          const key = `produtos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
           await env.BUCKET.put(key, arquivo.stream(), {
             httpMetadata: { contentType: arquivo.type },
           });
+
           const base = env.R2_PUBLIC_URL.replace(/\/$/, '');
-          return json({ ok: true, key, url: base + '/' + key }, 201);
+          return json({ ok: true, key, url: `${base}/${key}` }, 201);
         }
 
         if (path === '/api/admin/produtos' && request.method === 'GET') {
@@ -153,12 +203,10 @@ export default {
 
         if (path === '/api/admin/produtos' && request.method === 'POST') {
           const b = await request.json();
-          if (!b.nome) {
-            return erro('O nome do produto e obrigatorio.');
-          }
+          if (!b.nome) return erro('O nome do produto e obrigatorio.');
           const r = await env.DB.prepare(
-            'INSERT INTO produtos (nome, descricao, preco_centavos, categoria, imagem_url, ativo, ordem) ' +
-              'VALUES (?, ?, ?, ?, ?, ?, ?)'
+            `INSERT INTO produtos (nome, descricao, preco_centavos, categoria, imagem_url, ativo, ordem)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
           )
             .bind(
               b.nome,
@@ -180,16 +228,16 @@ export default {
           if (request.method === 'PUT') {
             const b = await request.json();
             await env.DB.prepare(
-              'UPDATE produtos SET ' +
-                'nome = COALESCE(?, nome), ' +
-                'descricao = COALESCE(?, descricao), ' +
-                'preco_centavos = COALESCE(?, preco_centavos), ' +
-                'categoria = COALESCE(?, categoria), ' +
-                'imagem_url = COALESCE(?, imagem_url), ' +
-                'ativo = COALESCE(?, ativo), ' +
-                'ordem = COALESCE(?, ordem), ' +
-                "atualizado_em = datetime('now') " +
-                'WHERE id = ?'
+              `UPDATE produtos SET
+                 nome = COALESCE(?, nome),
+                 descricao = COALESCE(?, descricao),
+                 preco_centavos = COALESCE(?, preco_centavos),
+                 categoria = COALESCE(?, categoria),
+                 imagem_url = COALESCE(?, imagem_url),
+                 ativo = COALESCE(?, ativo),
+                 ordem = COALESCE(?, ordem),
+                 atualizado_em = datetime('now')
+               WHERE id = ?`
             )
               .bind(
                 b.nome ?? null,
@@ -206,6 +254,7 @@ export default {
           }
 
           if (request.method === 'DELETE') {
+            // Remove a imagem do R2 tambem, se existir
             const { results } = await env.DB.prepare(
               'SELECT imagem_url FROM produtos WHERE id = ?'
             )
@@ -218,9 +267,7 @@ export default {
                 await env.BUCKET.delete(key);
               }
             }
-            await env.DB.prepare('DELETE FROM produtos WHERE id = ?')
-              .bind(id)
-              .run();
+            await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(id).run();
             return json({ ok: true });
           }
         }
@@ -228,14 +275,12 @@ export default {
         if (path === '/api/admin/config' && request.method === 'PATCH') {
           const b = await request.json();
           const entradas = Object.entries(b);
-          if (entradas.length === 0) {
-            return erro('Nenhuma configuracao enviada.');
-          }
+          if (entradas.length === 0) return erro('Nenhuma configuracao enviada.');
           for (const [chave, valor] of entradas) {
             await env.DB.prepare(
-              'INSERT INTO config (chave, valor, atualizado_em) ' +
-                "VALUES (?, ?, datetime('now')) " +
-                "ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor, atualizado_em = datetime('now')"
+              `INSERT INTO config (chave, valor, atualizado_em)
+               VALUES (?, ?, datetime('now'))
+               ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor, atualizado_em = datetime('now')`
             )
               .bind(chave, String(valor))
               .run();
@@ -246,6 +291,7 @@ export default {
         return erro('Rota de admin nao encontrada.', 404);
       }
 
+      // ---------- ESTATICOS ----------
       if (env.ASSETS) {
         return env.ASSETS.fetch(request);
       }
