@@ -343,7 +343,36 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
 .produto-img > .selo {
   z-index: 2;
 }
+/* ===== Correção de performance: tema escuro no mobile ===== */
 
+@media (max-width: 768px) {
+  /* 1. Modal: remove o vidro e a animação infinita */
+  html.tema-escuro .modal-caixa {
+    animation: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(28, 18, 32, 0.97) !important;
+    transition: background-color 180ms ease, border-color 180ms ease !important;
+  }
+
+  /* 2. Título: remove o brilho animado */
+  .hero h1,
+  html.tema-escuro .hero h1 {
+    animation: none !important;
+    background-position: 0% 50% !important;
+  }
+}
+
+/* 3. Respeita quem pediu menos movimento no sistema */
+@media (prefers-reduced-motion: reduce) {
+  html.tema-escuro .modal-caixa,
+  .hero h1,
+  html.tema-escuro .hero h1 {
+    animation: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
 </style>
 <script>
 /* Skip artifact shell — fixed helpers served beside every artifact. */
