@@ -2862,6 +2862,21 @@ document.addEventListener('DOMContentLoaded', function () {
     linhas.push('Entrega: ' + entregaTipo);
     if (entregaTipo === 'Entrega') linhas.push('Endereço: ' + (endereco || 'a confirmar'));
     linhas.push('Observações: ' + (obs || 'nenhuma'));
+         fetch('/api/pedido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        cliente_nome: null,
+        cliente_telefone: null,
+        tipo_entrega: entregaTipo === 'Entrega' ? 'entrega' : 'retirada',
+        endereco: entregaTipo === 'Entrega' ? (endereco || null) : null,
+        observacoes: obs || null,
+        itens: carrinho.map(function(i){
+          return { nome: i.nome, qtd: i.qtd, preco_centavos: i.preco };
+        })
+      })
+    }).catch(function(e){ console.error('Erro ao gravar pedido', e); });
     var url = 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
     window.open(url, '_blank', 'noopener');
     if (window.skipUI) window.skipUI.toast('Pedido pronto para envio no WhatsApp', { type: 'success' });
