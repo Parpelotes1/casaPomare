@@ -26,6 +26,38 @@ export default {
       return h === `Bearer ${env.ADMIN_TOKEN}`;
     };
 
+            if (path === '/api/admin/pedidos' && request.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
+          ).all();
+          return json(results);
+        }
+
+        const mPed = path.match(/^\/api\/admin\/pedidos\/(\d+)$/);
+        if (mPed && request.method === 'PATCH') {
+          const b = await request.json();
+          const status = String(b.status || '').trim();
+          const permitidos = ['novo', 'em_preparo', 'entregue', 'cancelado'];
+          if (!permitidos.includes(status)) return erro('Status invalido.');
+          await env.DB.prepare(
+            "UPDATE pedidos SET status = ? WHERE id = ?"
+          ).bind(status, Number(mPed[1])).run();
+          return json({ ok: true });
+        }
+
+        if (path === '/api/admin/backup' && request.method === 'GET') {
+          const prod = await env.DB.prepare('SELECT * FROM produtos ORDER BY id ASC').all();
+          const conf = await env.DB.prepare('SELECT chave, valor FROM config').all();
+          const ped  = await env.DB.prepare('SELECT * FROM pedidos ORDER BY id ASC').all();
+          return json({
+            ok: true,
+            gerado_em: new Date().toISOString(),
+            versao: 1,
+            produtos: prod.results,
+            config: conf.results,
+            pedidos: ped.results,
+          });
+        }
     try {
       // ---------- PUBLICO ----------
       if (path === '/api/produtos' && request.method === 'GET') {
