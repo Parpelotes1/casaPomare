@@ -16,7 +16,7 @@ database_id = "55a3b780-4fba-41c5-abff-198c5604be7f"
 # Bucket R2 para fotos dos produtos
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "casa-pomare-imagens"
+bucket_name = "casa-pomare-img-2026"
 
 [vars]
 WHATSAPP = "5516992874030"
