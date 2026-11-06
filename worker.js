@@ -27,8 +27,6 @@ export default {
     }
 
     try {
-      // ---------- PUBLICO ----------
-
       if (path === '/api/produtos' && request.method === 'GET') {
         const { results } = await env.DB.prepare(
           'SELECT * FROM produtos WHERE ativo = 1 ORDER BY ordem ASC, id ASC'
@@ -77,7 +75,6 @@ export default {
         return json(results);
       }
 
-      // ---------- ADMIN ----------
       if (path.startsWith('/api/admin/')) {
         if (!authOk(request)) return erro('Token invalido ou ausente.', 401);
 
@@ -126,14 +123,11 @@ export default {
           if (arquivo.size > 5 * 1024 * 1024) {
             return erro('A imagem pode ter no maximo 5 MB.');
           }
-
           const ext = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
           const key = `produtos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
           await env.BUCKET.put(key, arquivo.stream(), {
             httpMetadata: { contentType: arquivo.type },
           });
-
           const base = env.R2_PUBLIC_URL.replace(/\/$/, '');
           return json({ ok: true, key, url: `${base}/${key}` }, 201);
         }
@@ -234,7 +228,6 @@ export default {
         return erro('Rota de admin nao encontrada.', 404);
       }
 
-      // ---------- ESTATICOS ----------
       if (env.ASSETS) {
         return env.ASSETS.fetch(request);
       }
