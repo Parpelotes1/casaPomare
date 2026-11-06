@@ -20,4 +20,4 @@ bucket_name = "casa-pomare-img-2026"
 
 [vars]
 WHATSAPP = "5516992874030"
-R2_PUBLIC_URL = "COLE_AQUI_A_URL_PUBLICA_DO_BUCKET"
+R2_PUBLIC_URL = "https://pub-c0ee15017fee41139aef808f1a30fba3.r2.dev"
