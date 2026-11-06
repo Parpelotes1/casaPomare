@@ -73,6 +73,31 @@ export default {
       if (path.startsWith('/api/admin/')) {
         if (!authOk(request)) return erro('Token invalido ou ausente.', 401);
 
+        // Upload de foto do produto
+        if (path === '/api/admin/upload' && request.method === 'POST') {
+          const form = await request.formData();
+          const arquivo = form.get('imagem');
+          if (!arquivo || typeof arquivo === 'string') {
+            return erro('Nenhuma imagem enviada.');
+          }
+          if (!arquivo.type.startsWith('image/')) {
+            return erro('O arquivo precisa ser uma imagem.');
+          }
+          if (arquivo.size > 5 * 1024 * 1024) {
+            return erro('A imagem pode ter no maximo 5 MB.');
+          }
+
+          const ext = (arquivo.name.split('.').pop() || 'jpg').toLowerCase();
+          const key = `produtos/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+          await env.BUCKET.put(key, arquivo.stream(), {
+            httpMetadata: { contentType: arquivo.type },
+          });
+
+          const base = env.R2_PUBLIC_URL.replace(/\/$/, '');
+          return json({ ok: true, key, url: `${base}/${key}` }, 201);
+        }
+
         if (path === '/api/admin/produtos' && request.method === 'GET') {
           const { results } = await env.DB.prepare(
             'SELECT * FROM produtos ORDER BY ordem ASC, id ASC'
@@ -133,6 +158,19 @@ export default {
           }
 
           if (request.method === 'DELETE') {
+            // Remove a imagem do R2 tambem, se existir
+            const { results } = await env.DB.prepare(
+              'SELECT imagem_url FROM produtos WHERE id = ?'
+            )
+              .bind(id)
+              .all();
+            if (results.length && results[0].imagem_url) {
+              const base = env.R2_PUBLIC_URL.replace(/\/$/, '');
+              if (results[0].imagem_url.startsWith(base)) {
+                const key = results[0].imagem_url.slice(base.length + 1);
+                await env.BUCKET.delete(key);
+              }
+            }
             await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(id).run();
             return json({ ok: true });
           }
