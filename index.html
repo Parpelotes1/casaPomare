@@ -2682,8 +2682,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var html = lista.map(function (p, idx) {
       return '<article class="vidro produto reveal" style="animation: flutuar ' + (6 + (idx % 3)) + 's ease-in-out infinite; animation-delay:' + (-idx * 0.7) + 's">' +
         '<div class="brilho" style="animation-delay:' + (-idx * 0.9) + 's"></div>' +
-               '<div class="produto-img">' + (p.imagem ? '<img class="ken" src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="object-fit:cover">' : '<div class="ken" style="background:' + p.gradiente + '"></div>') + '<span class="selo">' + esc(p.cat) + '</span></div>' +
-<span class="selo">' + esc(p.cat) + '</span></div>' +
+              '<div class="produto-img">' + (p.imagem ? '<img class="ken" src="' + p.imagem + '" alt="' + esc(p.nome) + '" style="object-fit:cover">' : '<div class="ken" style="background:' + p.gradiente + '"></div>') + esc(p.cat) + '</span></div>' +
         '<h3>' + esc(p.nome) + '</h3>' +
         '<p class="desc">' + esc(p.desc) + '</p>' +
         '<div class="rodape"><span class="preco">' + fmt(p.preco) + '</span>' +
