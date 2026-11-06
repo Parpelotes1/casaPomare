@@ -9,42 +9,6 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
-    if (request.method === 'OPTIONS') {
-    if (url.pathname === '/api/pedidos' && req.method === 'POST') {
-  try {
-    const b = await req.json();
-    if (!Array.isArray(b.itens) || b.itens.length === 0) {
-      return json({ error: 'Pedido sem itens' }, 400);
-    
-    const r = await env.DB.prepare(
-      `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
-    ).bind(
-      b.cliente_nome || '',
-      b.cliente_telefone || '',
-      b.entrega || '',
-      b.endereco || '',
-      b.observacoes || '',
-      JSON.stringify(b.itens),
-      Number(b.total_centavos) || 0
-    ).run();
-    return json({ ok: true, id: r.meta.last_row_id }, 201);
-  } catch (e) {
-    return json({ error: 'Erro ao gravar pedido', detalhe: String(e) }, 500);
-  }
-}
-
-const url = new URL(request.url);
-const path = url.pathname;
-  const { results } = await env.DB.prepare(
-    'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
-  ).all();
-  return json(results);
-}
-}
-      return new Response(null, { headers: cors });
-    
-
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), {
         status,
@@ -58,40 +22,13 @@ const path = url.pathname;
       return h === `Bearer ${env.ADMIN_TOKEN}`;
     };
 
-            if (path === '/api/admin/pedidos' && request.method === 'GET') {
-          const { results } = await env.DB.prepare(
-            'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
-          ).all();
-          return json(results);
-        }
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: cors });
+    }
 
-        const mPed = path.match(/^\/api\/admin\/pedidos\/(\d+)$/);
-        if (mPed && request.method === 'PATCH') {
-          const b = await request.json();
-          const status = String(b.status || '').trim();
-          const permitidos = ['novo', 'em_preparo', 'entregue', 'cancelado'];
-          if (!permitidos.includes(status)) return erro('Status invalido.');
-          await env.DB.prepare(
-            "UPDATE pedidos SET status = ? WHERE id = ?"
-          ).bind(status, Number(mPed[1])).run();
-          return json({ ok: true });
-        }
-
-        if (path === '/api/admin/backup' && request.method === 'GET') {
-          const prod = await env.DB.prepare('SELECT * FROM produtos ORDER BY id ASC').all();
-          const conf = await env.DB.prepare('SELECT chave, valor FROM config').all();
-          const ped  = await env.DB.prepare('SELECT * FROM pedidos ORDER BY id ASC').all();
-          return json({
-            ok: true,
-            gerado_em: new Date().toISOString(),
-            versao: 1,
-            produtos: prod.results,
-            config: conf.results,
-            pedidos: ped.results,
-          });
-        }
     try {
       // ---------- PUBLICO ----------
+
       if (path === '/api/produtos' && request.method === 'GET') {
         const { results } = await env.DB.prepare(
           'SELECT * FROM produtos WHERE ativo = 1 ORDER BY ordem ASC, id ASC'
@@ -133,45 +70,50 @@ const path = url.pathname;
         return json({ ok: true, id: r.meta.last_row_id, total_centavos: total });
       }
 
+      if (path === '/api/pedidos' && request.method === 'GET') {
+        const { results } = await env.DB.prepare(
+          'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
+        ).all();
+        return json(results);
+      }
+
       // ---------- ADMIN ----------
       if (path.startsWith('/api/admin/')) {
-        // ---------- PEDIDOS ----------
-if (url.pathname === '/api/pedidos' && req.method === 'POST') {
-  try {
-    const b = await req.json();
-
-    if (!Array.isArray(b.itens) || b.itens.length === 0) {
-      return json({ error: 'Pedido sem itens' }, 400);
-    }
-
-    const r = await env.DB.prepare(
-      `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
-    ).bind(
-      b.cliente_nome || '',
-      b.cliente_telefone || '',
-      b.entrega || '',
-      b.endereco || '',
-      b.observacoes || '',
-      JSON.stringify(b.itens),
-      Number(b.total_centavos) || 0
-    ).run();
-
-    return json({ ok: true, id: r.meta.last_row_id }, 201);
-  } catch (e) {
-    return json({ error: 'Erro ao gravar pedido', detalhe: String(e) }, 500);
-  }
-}
-
-if (url.pathname === '/api/pedidos' && req.method === 'GET') {
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM pedidos ORDER BY id DESC LIMIT 200`
-  ).all();
-  return json(results);
-}
         if (!authOk(request)) return erro('Token invalido ou ausente.', 401);
 
-        // Upload de foto do produto
+        if (path === '/api/admin/pedidos' && request.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
+          ).all();
+          return json(results);
+        }
+
+        const mPed = path.match(/^\/api\/admin\/pedidos\/(\d+)$/);
+        if (mPed && request.method === 'PATCH') {
+          const b = await request.json();
+          const status = String(b.status || '').trim();
+          const permitidos = ['novo', 'em_preparo', 'entregue', 'cancelado'];
+          if (!permitidos.includes(status)) return erro('Status invalido.');
+          await env.DB.prepare(
+            'UPDATE pedidos SET status = ? WHERE id = ?'
+          ).bind(status, Number(mPed[1])).run();
+          return json({ ok: true });
+        }
+
+        if (path === '/api/admin/backup' && request.method === 'GET') {
+          const prod = await env.DB.prepare('SELECT * FROM produtos ORDER BY id ASC').all();
+          const conf = await env.DB.prepare('SELECT chave, valor FROM config').all();
+          const ped = await env.DB.prepare('SELECT * FROM pedidos ORDER BY id ASC').all();
+          return json({
+            ok: true,
+            gerado_em: new Date().toISOString(),
+            versao: 1,
+            produtos: prod.results,
+            config: conf.results,
+            pedidos: ped.results,
+          });
+        }
+
         if (path === '/api/admin/upload' && request.method === 'POST') {
           const form = await request.formData();
           const arquivo = form.get('imagem');
@@ -256,7 +198,6 @@ if (url.pathname === '/api/pedidos' && req.method === 'GET') {
           }
 
           if (request.method === 'DELETE') {
-            // Remove a imagem do R2 tambem, se existir
             const { results } = await env.DB.prepare(
               'SELECT imagem_url FROM produtos WHERE id = ?'
             )
@@ -298,7 +239,7 @@ if (url.pathname === '/api/pedidos' && req.method === 'GET') {
         return env.ASSETS.fetch(request);
       }
       return new Response('Arquivo nao encontrado', { status: 404 });
-     catch (e) {
+    } catch (e) {
       return erro('Erro interno: ' + e.message, 500);
     }
   },
