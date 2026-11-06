@@ -2,7 +2,7 @@ name = "casa-pomare"
 main = "worker.js"
 compatibility_date = "2026-01-01"
 
-# Serve o index.html e demais arquivos estáticos da pasta
+# Serve o index.html e demais arquivos estáticos
 [assets]
 directory = "./"
 binding = "ASSETS"
@@ -13,6 +13,11 @@ binding = "DB"
 database_name = "casa-pomare-db"
 database_id = "55a3b780-4fba-41c5-abff-198c5604be7f"
 
-# Variáveis de ambiente
+# Bucket R2 para fotos dos produtos
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "casa-pomare-imagens"
+
 [vars]
 WHATSAPP = "5516992874030"
+R2_PUBLIC_URL = "COLE_AQUI_A_URL_PUBLICA_DO_BUCKET"
