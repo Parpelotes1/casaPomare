@@ -4,7 +4,7 @@ compatibility_date = "2026-01-01"
 
 # Serve o index.html e demais arquivos estáticos
 [assets]
-directory = "./"
+directory = "./public"
 binding = "ASSETS"
 
 # Banco de dados D1
