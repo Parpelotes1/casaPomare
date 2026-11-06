@@ -15,7 +15,7 @@ export default {
     const b = await req.json();
     if (!Array.isArray(b.itens) || b.itens.length === 0) {
       return json({ error: 'Pedido sem itens' }, 400);
-    }
+    
     const r = await env.DB.prepare(
       `INSERT INTO pedidos (cliente_nome, cliente_telefone, entrega, endereco, observacoes, itens, total_centavos, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'novo')`
@@ -34,7 +34,8 @@ export default {
   }
 }
 
-if (url.pathname === '/api/pedidos' && req.method === 'GET') {
+const url = new URL(request.url);
+const path = url.pathname;
   const { results } = await env.DB.prepare(
     'SELECT * FROM pedidos ORDER BY id DESC LIMIT 200'
   ).all();
@@ -42,7 +43,7 @@ if (url.pathname === '/api/pedidos' && req.method === 'GET') {
 }
 }
       return new Response(null, { headers: cors });
-    }
+    
 
     const json = (data, status = 200) =>
       new Response(JSON.stringify(data), {
@@ -297,7 +298,7 @@ if (url.pathname === '/api/pedidos' && req.method === 'GET') {
         return env.ASSETS.fetch(request);
       }
       return new Response('Arquivo nao encontrado', { status: 404 });
-    } catch (e) {
+     catch (e) {
       return erro('Erro interno: ' + e.message, 500);
     }
   },
