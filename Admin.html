@@ -1,0 +1,2816 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel — Casa Pomarê</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;1,500;1,600&display=swap">
+<style>
+/* Skip artifact shell — fixed styles served beside every artifact.
+   Tokens, utilities and components (basecoat 1.0 markup, no CDN); artifacts
+   override --accent for their own identity. */
+:root {
+  color-scheme: light dark;
+  --accent: #2563eb;
+  --accent-contrast: #ffffff;
+  --accent-text: color-mix(in srgb, var(--accent) 72%, #000);
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --text: #14171f;
+  --text-muted: #5b6472;
+  --border: rgba(20, 23, 31, 0.10);
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(20, 23, 31, 0.08);
+  --space: 16px;
+  --success: #0a7a35;
+  --danger: #c0262d;
+  --warning: #8a5300;
+}
+/* Theme resolution. Without data-theme the viewer's system preference decides,
+   as it always did. With it, the artifact's own choice wins in BOTH directions:
+   a page that hardcodes one palette must not be handed the opposite set of
+   tokens by the machine it happens to be opened on. The dark values appear
+   twice because a media query cannot be folded into a selector list.
+   The attribute sits inside :where() so these blocks keep the specificity of a
+   bare :root — the page's own <style> is linked after this file and must go on
+   overriding any token it wants, exactly as it could before. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --accent-text: color-mix(in srgb, var(--accent) 78%, #fff);
+    --bg: #101318;
+    --surface: #181c23;
+    --text: #eef1f6;
+    --text-muted: #9aa4b2;
+    --border: rgba(238, 241, 246, 0.12);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --success: #4ade80;
+    --danger: #f87171;
+    --warning: #fbbf24;
+  }
+}
+:root:where([data-theme="dark"]) {
+  color-scheme: dark;
+  --accent-text: color-mix(in srgb, var(--accent) 78%, #fff);
+  --bg: #101318;
+  --surface: #181c23;
+  --text: #eef1f6;
+  --text-muted: #9aa4b2;
+  --border: rgba(238, 241, 246, 0.12);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+}
+:root:where([data-theme="light"]) { color-scheme: light; }
+/* Pages generated before the shell had its own components still link the
+   basecoat CDN, which reads its own tokens and switches theme only on a
+   .dark class. Bridged to the shell's, whatever of it those pages use takes
+   the page's accent and follows the declared theme. Its --accent token is a
+   hover tint, renamed in its theme as --color-accent; the shell's --accent is
+   the brand colour, so the tint is derived from it here. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-contrast);
+  --secondary: color-mix(in srgb, var(--text) 7%, var(--surface));
+  --secondary-foreground: var(--text);
+  --muted: color-mix(in srgb, var(--text) 5%, var(--surface));
+  --muted-foreground: var(--text-muted);
+  --color-accent: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  --color-accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--accent);
+}
+* { box-sizing: border-box; }
+/* The reset the pages were written against: they all linked basecoat, which
+   ships Tailwind's. Its components now live here, so the reset does too. */
+*, ::before, ::after, ::backdrop { margin: 0; padding: 0; border: 0 solid; }
+/* Preflight's rule too: without it a component class that sets display
+   (.alert, .card, .btn…) beats the hidden attribute and shows the element. */
+[hidden]:where(:not([hidden="until-found"])) { display: none !important; }
+.hidden { display: none !important; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+a { color: inherit; text-decoration: inherit; }
+b, strong { font-weight: bolder; }
+ol, ul, menu { list-style: none; }
+svg, video, canvas, iframe { display: block; vertical-align: middle; }
+button, input, select, textarea { color: inherit; background-color: transparent; border-radius: 0; }
+table { border-collapse: collapse; }
+hr { height: 0; color: inherit; border-top-width: 1px; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+
+.shell-container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+.shell-section { padding: calc(var(--space) * 2) 0; }
+.shell-grid { display: grid; gap: var(--space); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.shell-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: var(--space); }
+.shell-footer { padding: 24px 0 40px; color: var(--text-muted); font-size: 13px; }
+
+.shell-hero { padding: calc(var(--space) * 3) 0 calc(var(--space) * 2); }
+.shell-hero h1 { font-size: clamp(26px, 4vw, 40px); line-height: 1.15; margin: 0 0 10px; text-wrap: balance; }
+.shell-hero p { color: var(--text-muted); max-width: 60ch; margin: 0; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space);
+}
+
+.kpi { display: flex; flex-direction: column; gap: 4px; }
+.kpi .kpi-value { font-size: clamp(22px, 2.3vw, 28px); font-weight: 650; line-height: 1.1; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.kpi .kpi-label { font-size: 13px; color: var(--text-muted); }
+.kpi .kpi-delta { font-size: 12.5px; font-weight: 600; }
+.kpi .kpi-delta.up { color: var(--success); }
+.kpi .kpi-delta.down { color: var(--danger); }
+
+table.shell-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.shell-table th {
+  text-align: left; font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 600;
+}
+table.shell-table th, table.shell-table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--border); }
+table.shell-table td.num, table.shell-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.chart-box { width: 100%; min-height: 220px; }
+.chart-box svg { width: 100%; height: auto; display: block; }
+.chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 12px; font-size: 12.5px; color: var(--text-muted); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.chart-legend b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.muted { color: var(--text-muted); }
+.accent { color: var(--accent-text); }
+.shell-badge, .eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-text);
+}
+/* A pill keeps its content width inside flex and grid columns, which would
+   otherwise stretch it across the card; a centred parent still centres it. */
+.shell-badge, .eyebrow, .badge { width: fit-content; max-width: 100%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .shell-fade { animation: shell-fade 400ms ease both; }
+  @keyframes shell-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}
+
+/* Layout and type utilities: what the pages kept spelling in style="".
+   Spacing and type sizes follow Tailwind's scale; there is no Tailwind. */
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.stack { display: flex; flex-direction: column; gap: var(--space); }
+.between { justify-content: space-between; }
+.grow { flex: 1 1 0; min-width: 0; }
+.cols-2, .cols-3, .cols-4, .cols-5 { display: grid; gap: var(--space); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) {
+  .cols-2, .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cols-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 1000px) { .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; }
+.m-0 { margin: 0; }
+.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
+.mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
+.p-2 { padding: 8px; } .p-3 { padding: 12px; } .p-4 { padding: 16px; } .p-6 { padding: 24px; }
+.text-xs { font-size: 12px; } .text-sm { font-size: 14px; } .text-base { font-size: 16px; }
+.text-lg { font-size: 18px; } .text-xl { font-size: 20px; line-height: 1.35; }
+.text-2xl { font-size: 24px; line-height: 1.25; } .text-3xl { font-size: 30px; line-height: 1.2; }
+.font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
+.text-right { text-align: right; } .text-center { text-align: center; }
+.nowrap { white-space: nowrap; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+.w-full { width: 100%; }
+.text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-warning { color: var(--warning); }
+
+/* Components, with basecoat 1.0 markup (variants and sizes are data
+   attributes) and the shell tokens, so a page needs neither component CSS
+   nor a CSS framework. An older page that also links basecoat gets these
+   rules after it, over the same properties. */
+button, input, select, textarea { font: inherit; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 14px; border: 1px solid transparent; border-radius: calc(var(--radius) - 2px);
+  background: var(--accent); color: var(--accent-contrast);
+  font-size: 14px; font-weight: 500; line-height: 1; white-space: nowrap; text-decoration: none; cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.btn:hover { background: color-mix(in srgb, var(--accent) 86%, #000); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+.btn[data-variant="secondary"] { background: color-mix(in srgb, var(--text) 8%, var(--surface)); color: var(--text); }
+.btn[data-variant="secondary"]:hover { background: color-mix(in srgb, var(--text) 14%, var(--surface)); }
+.btn[data-variant="outline"] { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn[data-variant="ghost"] { background: transparent; color: var(--text); }
+.btn[data-variant="outline"]:hover, .btn[data-variant="ghost"]:hover { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.btn[data-variant="destructive"] { background: var(--danger); color: var(--bg); }
+.btn[data-variant="destructive"]:hover { background: color-mix(in srgb, var(--danger) 86%, var(--text)); }
+.btn[data-variant="link"] { height: auto; padding: 0; background: none; color: var(--accent-text); text-decoration: underline; text-underline-offset: 3px; }
+.btn[data-size="sm"] { height: 30px; padding: 0 10px; font-size: 13px; }
+.btn[data-size="lg"] { height: 42px; padding: 0 20px; font-size: 15px; }
+.btn[data-size="icon"] { width: 36px; padding: 0; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+  border: 1px solid transparent; border-radius: 999px; background: var(--accent); color: var(--accent-contrast);
+  font-size: 12px; font-weight: 600; line-height: 1.5; white-space: nowrap;
+}
+.badge[data-variant="secondary"] { background: color-mix(in srgb, var(--text) 8%, var(--surface)); color: var(--text); }
+.badge[data-variant="outline"] { background: transparent; color: var(--text); border-color: var(--border); }
+.badge[data-variant="destructive"] { background: color-mix(in srgb, var(--danger) 14%, var(--surface)); color: var(--danger); }
+
+.alert {
+  display: grid; gap: 4px; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); font-size: 14px;
+}
+.alert h2, .alert h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.alert p, .alert section { margin: 0; color: var(--text-muted); }
+.alert[data-variant="destructive"] { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); color: var(--danger); }
+
+.card {
+  display: flex; flex-direction: column; gap: 16px; padding: 20px 0;
+  border: 1px solid var(--border); border-radius: calc(var(--radius) + 2px);
+  background: var(--surface); color: var(--text); box-shadow: var(--shadow);
+}
+.card > header, .card > section, .card > footer { padding: 0 20px; }
+.card > header { display: grid; gap: 4px; }
+.card > header h2, .card > header h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.card > header p { margin: 0; color: var(--text-muted); font-size: 14px; }
+.card > footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.input {
+  width: 100%; min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  background: var(--surface); color: var(--text); font-size: 14px;
+}
+textarea.input { min-height: 84px; resize: vertical; }
+.input::placeholder { color: var(--text-muted); }
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; }
+.field [role="alert"] { color: var(--danger); font-size: 13px; }
+
+dialog.dialog {
+  width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); margin: auto; padding: 0;
+  border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px);
+  background: var(--surface); color: var(--text); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+dialog.dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+dialog.dialog > div { display: grid; gap: 16px; padding: 24px; }
+dialog.dialog header { display: grid; gap: 4px; }
+dialog.dialog header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+dialog.dialog header p { margin: 0; color: var(--text-muted); font-size: 14px; }
+dialog.dialog footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+.tabs { display: grid; gap: 12px; }
+.tabs > [role="tablist"] {
+  display: inline-flex; gap: 4px; width: fit-content; max-width: 100%; padding: 4px; overflow-x: auto;
+  border-radius: var(--radius); background: color-mix(in srgb, var(--text) 6%, var(--surface));
+}
+.tabs [role="tab"] {
+  padding: 6px 12px; border: 0; border-radius: calc(var(--radius) - 4px); background: transparent;
+  color: var(--text-muted); font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer;
+}
+.tabs [role="tab"][aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.tabs [role="tabpanel"][hidden] { display: none; }
+
+.accordion > details { border-bottom: 1px solid var(--border); }
+.accordion > details > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 0; font-weight: 500; list-style: none; cursor: pointer;
+}
+.accordion > details > summary::-webkit-details-marker { display: none; }
+.accordion > details > summary::after { content: "+"; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.accordion > details[open] > summary::after { content: "\2212"; }
+.accordion > details > :not(summary) { margin: 0 0 14px; color: var(--text-muted); }
+
+.toaster {
+  position: fixed; right: 16px; bottom: 16px; z-index: 50; display: flex; flex-direction: column-reverse; gap: 8px;
+  width: min(360px, calc(100vw - 32px)); pointer-events: none;
+}
+.toaster .toast { pointer-events: auto; transition: opacity 200ms ease, transform 200ms ease; }
+.toaster .toast[aria-hidden="true"] { opacity: 0; transform: translateY(8px); }
+.toaster .toast-content {
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); font-size: 13px;
+}
+.toaster .toast-content h2 { margin: 0 0 2px; font-size: 14px; font-weight: 600; }
+.toaster .toast-content p { margin: 0; color: var(--text-muted); }
+
+/* skipUI building blocks. */
+.skip-table-search { max-width: 320px; margin-bottom: 12px; }
+.skip-table-wrap { overflow-x: auto; }
+table.shell-table th[data-sort] { cursor: pointer; user-select: none; }
+table.shell-table th[aria-sort="ascending"]::after { content: " \25B2"; font-size: 9px; }
+table.shell-table th[aria-sort="descending"]::after { content: " \25BC"; font-size: 9px; }
+table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: center; padding: 24px 0; }
+.skip-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 13px; color: var(--text-muted); }
+.toaster .toast[data-type="success"] .toast-content { border-left: 3px solid var(--success); }
+.toaster .toast[data-type="error"] .toast-content { border-left: 3px solid var(--danger); }
+
+</style>
+<script>
+/* Skip artifact shell — fixed helpers served beside every artifact. */
+(function () {
+  "use strict";
+
+  var fmt = {
+    num: function (v, opts) { return new Intl.NumberFormat("pt-BR", opts || {}).format(v); },
+    brl: function (v) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v); },
+    pct: function (v) { return new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 }).format(v); },
+    compact: function (v) { return new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v); },
+    brlCompact: function (v) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 }).format(v); }
+  };
+
+  // axisLabels formats the five y-axis ticks in the unit the chart declared
+  // (percent, BRL or plain numbers), compact so long values never clip, with
+  // the fewest decimals that still print every tick exactly (1,5 mi, not 2 mi).
+  function axisLabels(format, ticks) {
+    function at(digits) {
+      var opts = { notation: "compact", maximumFractionDigits: digits };
+      if (format === "pct") opts = { style: "percent", maximumFractionDigits: digits };
+      else if (format === "brl") opts = { style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: digits };
+      var nf = new Intl.NumberFormat("pt-BR", opts);
+      return ticks.map(function (t) { return nf.format(t); });
+    }
+    for (var digits = 0; digits < 2; digits++) {
+      if (at(digits).join("|") === at(digits + 1).join("|")) return at(digits);
+    }
+    return at(2);
+  }
+
+  // yAxisPad formats the ticks and measures the left padding they need from
+  // the longest one; drawYAxis then draws the grid and the labels.
+  function yAxisPad(format, max) {
+    var labels = axisLabels(format, [0, max / 4, max / 2, (max * 3) / 4, max]);
+    var longest = labels.reduce(function (m, l) { return Math.max(m, l.length); }, 0);
+    return { labels: labels, padL: Math.max(40, Math.round(longest * 6.2) + 14) };
+  }
+  function drawYAxis(svg, axis, W, padR, padT, plotH) {
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + plotH - (plotH * g) / 4;
+      svg.appendChild(svgEl("line", { x1: axis.padL, y1: gy, x2: W - padR, y2: gy, stroke: "currentColor", "stroke-opacity": 0.08 }));
+      var lbl = svgEl("text", { x: axis.padL - 8, y: gy + 4, "text-anchor": "end", "font-size": 10, fill: mutedColor() });
+      lbl.textContent = axis.labels[g];
+      svg.appendChild(lbl);
+    }
+  }
+
+  // xLabelStep: show every k-th category label so labels never overlap, and
+  // always the last one (counted back from the end).
+  function xLabelStep(labels, step) {
+    var longest = labels.reduce(function (m, l) { return Math.max(m, String(l).length); }, 0);
+    return Math.max(1, Math.ceil((longest * 6.4 + 8) / Math.max(step, 1)));
+  }
+  function drawXLabel(svg, text, x, y, W, edgeGuard) {
+    var anchor = "middle";
+    var half = String(text).length * 3.2;
+    if (edgeGuard && x - half < 4) anchor = "start";
+    if (edgeGuard && x + half > W - 4) anchor = "end";
+    var tx = svgEl("text", { x: x, y: y, "text-anchor": anchor, "font-size": 11, fill: mutedColor() });
+    tx.textContent = text;
+    svg.appendChild(tx);
+  }
+  // categoryLines fits a bar's category name in its slot: one line, two lines
+  // split at a space, or cut with "…". A bar without its name can't be read, so
+  // categories are never skipped; null when the slot is too narrow for that.
+  function categoryLines(text, slot) {
+    var fit = Math.floor((slot - 6) / 6.4);
+    var s = String(text);
+    if (fit < 4) return null;
+    if (s.length <= fit) return [s];
+    var cut = function (t) { return t.length <= fit ? t : t.slice(0, fit - 1).trimEnd() + "…"; };
+    var best = -1;
+    for (var i = 0; i < s.length; i++) {
+      if (s[i] === " " && (best < 0 || Math.abs(s.length / 2 - i) < Math.abs(s.length / 2 - best))) best = i;
+    }
+    if (best < 0) return [cut(s)];
+    return [cut(s.slice(0, best)), cut(s.slice(best + 1))];
+  }
+  function legend(el, items) {
+    var box = document.createElement("div");
+    box.className = "chart-legend";
+    items.forEach(function (it) {
+      var row = document.createElement("span");
+      var dot = document.createElement("i");
+      dot.style.background = it.color;
+      row.appendChild(dot);
+      row.appendChild(document.createTextNode((it.label || "") + (it.value ? " " : "")));
+      if (it.value) {
+        var v = document.createElement("b");
+        v.textContent = it.value;
+        row.appendChild(v);
+      }
+      box.appendChild(row);
+    });
+    resolve(el).appendChild(box);
+  }
+  var seriesPalette = ["#1baf7a", "#eda100", "#e34948", "#4a3aa7", "#e87ba4", "#0ea5b7"];
+
+  // format accepts a function OR one of the fmt names ("num" | "brl" | "pct").
+  // A page's function may return nothing or throw: the chart prints its
+  // number instead of taking the rest of the page script down with it.
+  function coerceFormat(spec) {
+    if (typeof spec === "function") {
+      return function (v) {
+        try {
+          var out = spec(v);
+          return out == null ? "" : String(out);
+        } catch (e) {
+          return fmt.num(v);
+        }
+      };
+    }
+    if (typeof spec === "string" && fmt[spec]) return fmt[spec];
+    return function (v) { return fmt.num(v); };
+  }
+
+  function accent() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#2563eb";
+  }
+  function mutedColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim() || "#5b6472";
+  }
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function frame(el, w, h) {
+    var svg = svgEl("svg", { viewBox: "0 0 " + w + " " + h, role: "img" });
+    el = resolve(el);
+    el.innerHTML = "";
+    el.appendChild(svg);
+    return svg;
+  }
+
+  // maxOf guards the axis scale: empty values would give -Infinity (truthy,
+  // so "|| 1" can't catch it) and a non-positive max would flip the chart.
+  // finite reads a chart value as a number, 0 when it is not one (NaN,
+  // Infinity, a stray string), so one bad value cannot blank the axis.
+  function finite(v) {
+    var n = +v;
+    return isFinite(n) ? n : 0;
+  }
+
+  function maxOf(values) {
+    var m = values.length ? Math.max.apply(null, values.map(finite)) : 0;
+    return m > 0 ? m : 1;
+  }
+
+  // labelsFor pads or trims the category names to the n points drawn: pages
+  // pass labels and values of different lengths, and one throw here loses
+  // every section the page renders after the chart.
+  function labelsFor(cfg, n) {
+    var out = [];
+    for (var i = 0; i < n; i++) out.push(cfg.labels && cfg.labels[i] != null ? String(cfg.labels[i]) : "");
+    return out;
+  }
+
+  // niceMax rounds the scale up so the four grid steps land on round values
+  // (1, 1.5, 2, 2.5, 3, 4, 5, 6 or 8 × 10^k) and the tick labels read exactly.
+  function niceMax(max) {
+    var raw = max / 4;
+    var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var res = raw / mag;
+    var steps = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+    var nice = steps.filter(function (s) { return s >= res - 1e-9; })[0];
+    return nice * mag * 4;
+  }
+
+  // bar(el, {labels:[], values:[], color?, format?}) — vertical bar chart.
+  function bar(el, cfg) {
+    var W = 640, H = 280, padB = 30, padT = 12, padR = 12;
+    var max = niceMax(maxOf(cfg.values));
+    var axis = yAxisPad(cfg.format, max);
+    var svg = frame(el, W, H);
+    var n = cfg.values.length;
+    var labels = labelsFor(cfg, n);
+    var plotW = W - axis.padL - padR;
+    var step = plotW / n, bw = Math.min(step * 0.62, 64);
+    var names = labels.map(function (l) { return categoryLines(l, step); });
+    var named = names.every(Boolean);
+    if (named && names.some(function (l) { return l.length > 1; })) padB = 42;
+    var plotH = H - padT - padB;
+    var color = cfg.color || accent();
+    var f = coerceFormat(cfg.format);
+    var every = xLabelStep(labels, step);
+    drawYAxis(svg, axis, W, padR, padT, plotH);
+    cfg.values.forEach(function (v, i) {
+      var bh = Math.max(0, (finite(v) / max) * plotH);
+      var x = axis.padL + i * step + (step - bw) / 2;
+      var y = padT + plotH - bh;
+      var r = svgEl("rect", { x: x, y: y, width: bw, height: bh, rx: 4, fill: (cfg.colors && cfg.colors[i]) || color });
+      var t = svgEl("title", {});
+      t.textContent = labels[i] + ": " + f(v);
+      r.appendChild(t);
+      svg.appendChild(r);
+      if (named) {
+        names[i].forEach(function (text, li) {
+          drawXLabel(svg, text, x + bw / 2, padT + plotH + 18 + li * 13, W, false);
+        });
+      } else if ((n - 1 - i) % every === 0) {
+        drawXLabel(svg, labels[i], x + bw / 2, H - 10, W, false);
+      }
+    });
+  }
+
+  // line(el, {labels:[], values:[] | series:[{label, values, color?}], color?, format?})
+  // — one line, or several series on one scale with a legend under the chart.
+  function line(el, cfg) {
+    var W = 640, H = 280, padB = 30, padT = 12, padR = 16;
+    var series = cfg.series && cfg.series.length
+      ? cfg.series
+      : [{ label: "", values: cfg.values || [], color: cfg.color }];
+    var all = [];
+    series.forEach(function (s) { all = all.concat(s.values || []); });
+    var max = niceMax(maxOf(all));
+    var axis = yAxisPad(cfg.format, max);
+    var svg = frame(el, W, H);
+    var n = series.reduce(function (m, s) { return Math.max(m, (s.values || []).length); }, 0);
+    var labels = labelsFor(cfg, n);
+    var plotW = W - axis.padL - padR, plotH = H - padT - padB;
+    var f = coerceFormat(cfg.format);
+    drawYAxis(svg, axis, W, padR, padT, plotH);
+    var xs = labels.map(function (_, i) { return axis.padL + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1)); });
+    var every = xLabelStep(labels, n > 1 ? plotW / (n - 1) : plotW);
+    labels.forEach(function (label, i) {
+      if ((n - 1 - i) % every === 0) drawXLabel(svg, label, xs[i], H - 10, W, true);
+    });
+    var colors = series.map(function (s, si) {
+      return s.color || (si === 0 ? (cfg.color || accent()) : seriesPalette[(si - 1) % seriesPalette.length]);
+    });
+    series.forEach(function (s, si) {
+      var color = colors[si];
+      var pts = (s.values || []).map(function (v, i) { return [xs[i], padT + plotH - (finite(v) / max) * plotH]; });
+      var d = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+      svg.appendChild(svgEl("path", { d: d, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+      pts.forEach(function (p, i) {
+        var c = svgEl("circle", { cx: p[0], cy: p[1], r: 3.5, fill: color });
+        var t = svgEl("title", {});
+        t.textContent = (s.label ? s.label + " · " : "") + labels[i] + ": " + f(s.values[i]);
+        c.appendChild(t);
+        svg.appendChild(c);
+      });
+    });
+    if (series.length > 1) {
+      legend(el, series.map(function (s, si) { return { label: s.label, color: colors[si] }; }));
+    }
+  }
+
+  // donut(el, {labels:[], values:[], colors?, format?, center?, centerLabel?, legend?})
+  // — donut with a short total in the centre (compact, in the declared unit)
+  // and, with legend: true, the labels and shares listed under it.
+  function donut(el, cfg) {
+    var W = 320, H = 280, cx = W / 2, cy = H / 2, R = 92, r = 58;
+    var svg = frame(el, W, H);
+    // At 100% of a wide container the donut outgrows the height pages give
+    // the box and spills over the next section: keep it at its own size.
+    svg.style.maxWidth = W + "px";
+    svg.style.margin = "0 auto";
+    var values = cfg.values.map(finite);
+    var labels = labelsFor(cfg, values.length);
+    var sum = values.reduce(function (a, b) { return a + b; }, 0);
+    var total = sum || 1;
+    var palette = cfg.colors || [accent()].concat(seriesPalette);
+    // The hover keeps the full value; the centre has room for a short one.
+    var full = coerceFormat(cfg.format);
+    var short = typeof cfg.format === "function" ? full : cfg.format === "brl" ? fmt.brlCompact : fmt.compact;
+    var a0 = -Math.PI / 2;
+    values.forEach(function (v, i) {
+      var a1 = a0 + (v / total) * Math.PI * 2;
+      var large = a1 - a0 > Math.PI ? 1 : 0;
+      var p = ["M", cx + R * Math.cos(a0), cy + R * Math.sin(a0),
+        "A", R, R, 0, large, 1, cx + R * Math.cos(a1), cy + R * Math.sin(a1),
+        "L", cx + r * Math.cos(a1), cy + r * Math.sin(a1),
+        "A", r, r, 0, large, 0, cx + r * Math.cos(a0), cy + r * Math.sin(a0), "Z"].join(" ");
+      var path = svgEl("path", { d: p, fill: palette[i % palette.length] });
+      var t = svgEl("title", {});
+      t.textContent = labels[i] + ": " + full(v) + " (" + fmt.pct(v / total) + ")";
+      path.appendChild(t);
+      svg.appendChild(path);
+      a0 = a1;
+    });
+    // A share chart has no total worth printing: without its own centre text
+    // the caption alone takes the middle.
+    var text = cfg.center != null ? String(cfg.center) : (cfg.format === "pct" ? "" : short(sum));
+    if (text) {
+      var size = text.length > 9 ? 14 : text.length > 7 ? 17 : 20;
+      var center = svgEl("text", { x: cx, y: cfg.centerLabel ? cy + 1 : cy + 6, "text-anchor": "middle", "font-size": size, "font-weight": 650, fill: "currentColor" });
+      center.textContent = text;
+      svg.appendChild(center);
+    }
+    if (cfg.centerLabel) {
+      var cap = svgEl("text", { x: cx, y: text ? cy + 19 : cy + 5, "text-anchor": "middle", "font-size": 11, fill: mutedColor() });
+      cap.textContent = cfg.centerLabel;
+      svg.appendChild(cap);
+    }
+    if (cfg.legend) {
+      legend(el, labels.map(function (label, i) {
+        return { label: label, color: palette[i % palette.length], value: fmt.pct(values[i] / total) };
+      }));
+    }
+  }
+
+  // ---- Page building blocks: what dashboards and small systems kept
+  // re-implementing — a searchable sortable table, a KPI row, tabs, toasts,
+  // dialogs, saved state and mock data. Every call is opt-in, so a page that
+  // brings its own versions keeps them.
+
+  function resolve(target) {
+    return typeof target === "string" ? document.querySelector(target) : target;
+  }
+
+  function node(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text != null) el.textContent = text;
+    return el;
+  }
+
+  function isNumberColumn(col) {
+    return col.align === "right" || col.format === "num" || col.format === "brl" || col.format === "pct";
+  }
+
+  function cellText(col, row) {
+    var value = row[col.key];
+    if (value == null) return "";
+    return col.format ? coerceFormat(col.format)(value) : String(value);
+  }
+
+  function compareValues(a, b) {
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a == null ? "" : a).localeCompare(String(b == null ? "" : b), "pt-BR", { numeric: true });
+  }
+
+  // table(el, {columns, rows, search?, pageSize?, empty?, onRowClick?}) — a
+  // table.shell-table with sortable headers, an optional search box and
+  // pager. A column is {key, label, format?, align?, sortable? (true),
+  // render?(value, row) returning a Node or an HTML string — the page writes
+  // its cell templates as markup}. Plain values are always set as text.
+  // Returns {setRows, rows}.
+  function table(target, cfg) {
+    var root = resolve(target);
+    var cols = cfg.columns || [];
+    var pageSize = cfg.pageSize || 0;
+    var state = { rows: (cfg.rows || []).slice(), query: "", key: null, dir: 1, page: 0 };
+    root.innerHTML = "";
+    if (cfg.search) {
+      var search = node("input", "input skip-table-search");
+      search.type = "search";
+      search.placeholder = typeof cfg.search === "string" ? cfg.search : "Buscar…";
+      search.setAttribute("aria-label", search.placeholder);
+      search.addEventListener("input", function () {
+        state.query = search.value.trim().toLowerCase();
+        state.page = 0;
+        draw();
+      });
+      root.appendChild(search);
+    }
+    var tableEl = node("table", "shell-table");
+    var headRow = node("tr");
+    var heads = cols.map(function (col) {
+      var th = node("th", isNumberColumn(col) ? "num" : "", col.label == null ? col.key : col.label);
+      th.scope = "col";
+      if (col.sortable !== false) {
+        var toggle = function () {
+          state.dir = state.key === col.key ? -state.dir : 1;
+          state.key = col.key;
+          draw();
+        };
+        th.setAttribute("data-sort", col.key);
+        th.tabIndex = 0;
+        th.addEventListener("click", toggle);
+        th.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+        });
+      }
+      headRow.appendChild(th);
+      return th;
+    });
+    var thead = node("thead");
+    var tbody = node("tbody");
+    var wrap = node("div", "skip-table-wrap");
+    var pager = node("div", "skip-pager");
+    thead.appendChild(headRow);
+    tableEl.appendChild(thead);
+    tableEl.appendChild(tbody);
+    wrap.appendChild(tableEl);
+    root.appendChild(wrap);
+    if (pageSize) root.appendChild(pager);
+
+    function visibleRows() {
+      var rows = state.rows;
+      if (state.query) {
+        rows = rows.filter(function (row) {
+          return cols.some(function (col) { return cellText(col, row).toLowerCase().indexOf(state.query) >= 0; });
+        });
+      }
+      if (state.key) {
+        var key = state.key, dir = state.dir;
+        rows = rows.slice().sort(function (a, b) { return dir * compareValues(a[key], b[key]); });
+      }
+      return rows;
+    }
+
+    function drawRow(row) {
+      var tr = node("tr");
+      cols.forEach(function (col) {
+        var td = node("td", isNumberColumn(col) ? "num" : "");
+        if (!col.render) {
+          td.textContent = cellText(col, row);
+        } else {
+          var content = col.render(row[col.key], row);
+          if (content instanceof Node) td.appendChild(content);
+          else td.innerHTML = content == null ? "" : String(content);
+        }
+        tr.appendChild(td);
+      });
+      // The row stays a row (no role) and takes focus, so a keyboard reaches
+      // the same action; keys pressed on a control inside a cell are its own.
+      if (cfg.onRowClick) {
+        tr.style.cursor = "pointer";
+        tr.tabIndex = 0;
+        tr.addEventListener("click", function () { cfg.onRowClick(row); });
+        tr.addEventListener("keydown", function (e) {
+          if (e.target !== tr || (e.key !== "Enter" && e.key !== " ")) return;
+          e.preventDefault();
+          cfg.onRowClick(row);
+        });
+      }
+      return tr;
+    }
+
+    function pagerButton(label, disabled, step) {
+      var button = node("button", "btn", label);
+      button.type = "button";
+      button.setAttribute("data-variant", "outline");
+      button.setAttribute("data-size", "sm");
+      button.disabled = disabled;
+      button.addEventListener("click", function () { state.page += step; draw(); });
+      return button;
+    }
+
+    function draw() {
+      var rows = visibleRows();
+      heads.forEach(function (th, i) {
+        if (cols[i].key === state.key) th.setAttribute("aria-sort", state.dir > 0 ? "ascending" : "descending");
+        else th.removeAttribute("aria-sort");
+      });
+      var pages = pageSize ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
+      state.page = Math.min(state.page, pages - 1);
+      var shown = pageSize ? rows.slice(state.page * pageSize, (state.page + 1) * pageSize) : rows;
+      tbody.innerHTML = "";
+      if (!shown.length) {
+        var empty = node("td", "skip-table-empty", cfg.empty || "Nenhum registro encontrado.");
+        empty.colSpan = cols.length;
+        tbody.appendChild(node("tr")).appendChild(empty);
+      }
+      shown.forEach(function (row) { tbody.appendChild(drawRow(row)); });
+      if (!pageSize) return;
+      pager.innerHTML = "";
+      var from = rows.length ? state.page * pageSize + 1 : 0;
+      pager.appendChild(node("span", "", from + "–" + Math.min(rows.length, (state.page + 1) * pageSize) + " de " + rows.length));
+      var nav = node("div", "row gap-2");
+      nav.appendChild(pagerButton("Anterior", state.page === 0, -1));
+      nav.appendChild(pagerButton("Próxima", state.page >= pages - 1, 1));
+      pager.appendChild(nav);
+    }
+
+    draw();
+    return {
+      setRows: function (rows) { state.rows = rows.slice(); draw(); },
+      rows: visibleRows
+    };
+  }
+
+  // kpis(el, [{label, value, format?, delta?, hint?}]) — KPI cards in a
+  // responsive grid; delta is a fraction (0.12 renders as ▲ 12%).
+  function kpis(target, items) {
+    var root = resolve(target);
+    root.innerHTML = "";
+    root.classList.add("shell-grid");
+    items.forEach(function (item) {
+      var card = node("div", "panel kpi");
+      card.appendChild(node("span", "kpi-label", item.label));
+      // Large money values go compact ("R$ 27,5 mi"): the full amount does
+      // not fit a KPI card at four per row.
+      var kpiFormat = item.format === "brl" && Math.abs(item.value) >= 1e6 ? fmt.brlCompact : (item.format ? coerceFormat(item.format) : null);
+      card.appendChild(node("span", "kpi-value", kpiFormat ? kpiFormat(item.value) : String(item.value)));
+      if (typeof item.delta === "number") {
+        var up = item.delta >= 0;
+        card.appendChild(node("span", "kpi-delta " + (up ? "up" : "down"), (up ? "▲ " : "▼ ") + fmt.pct(Math.abs(item.delta))));
+      }
+      if (item.hint) card.appendChild(node("span", "kpi-label", item.hint));
+      root.appendChild(card);
+    });
+  }
+
+  // badge(text, variant?) — a .badge node for table cells and lists;
+  // variant is "secondary" | "outline" | "destructive" (default: primary).
+  function badge(text, variant) {
+    var el = node("span", "badge", text);
+    if (variant) el.setAttribute("data-variant", variant);
+    return el;
+  }
+
+  // tabs(el) — wires one .tabs block: [role=tab] buttons inside
+  // [role=tablist], each with aria-controls naming its [role=tabpanel].
+  function tabs(target) {
+    var root = resolve(target);
+    var buttons = Array.prototype.slice.call(root.querySelectorAll('[role="tab"]'));
+    function select(chosen) {
+      buttons.forEach(function (b) {
+        var on = b === chosen;
+        b.setAttribute("aria-selected", on ? "true" : "false");
+        b.tabIndex = on ? 0 : -1;
+        var panel = document.getElementById(b.getAttribute("aria-controls"));
+        if (panel) panel.hidden = !on;
+      });
+    }
+    buttons.forEach(function (b, i) {
+      b.addEventListener("click", function () { select(b); });
+      b.addEventListener("keydown", function (e) {
+        var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        var next = buttons[(i + step + buttons.length) % buttons.length];
+        next.focus();
+        select(next);
+      });
+    });
+    select(buttons.filter(function (b) { return b.getAttribute("aria-selected") === "true"; })[0] || buttons[0]);
+  }
+
+  // toast(message, {type?: "success" | "error", title?, duration?}) — a
+  // .toast in a shared .toaster at the bottom of the page.
+  function toast(message, opts) {
+    opts = opts || {};
+    var toaster = document.querySelector(".toaster") || document.body.appendChild(node("div", "toaster"));
+    var item = node("div", "toast");
+    item.setAttribute("role", opts.type === "error" ? "alert" : "status");
+    item.setAttribute("aria-hidden", "true");
+    if (opts.type) item.setAttribute("data-type", opts.type);
+    var content = node("div", "toast-content");
+    var section = node("section");
+    if (opts.title) section.appendChild(node("h2", "", opts.title));
+    section.appendChild(node("p", "", message));
+    content.appendChild(section);
+    item.appendChild(content);
+    toaster.appendChild(item);
+    requestAnimationFrame(function () { item.setAttribute("aria-hidden", "false"); });
+    setTimeout(function () {
+      item.setAttribute("aria-hidden", "true");
+      setTimeout(function () { item.remove(); }, 400);
+    }, opts.duration || 3000);
+  }
+
+  // Dialogs are native <dialog class="dialog">: a [data-dialog-open="id"]
+  // anywhere opens one, a [data-dialog-close] inside closes it, and a click on
+  // its backdrop closes it too. Plain dialog.showModal()/close() still work.
+  document.addEventListener("click", function (e) {
+    var target = e.target;
+    if (!(target instanceof Element)) return;
+    var opener = target.closest("[data-dialog-open]");
+    if (opener) {
+      var dialog = document.getElementById(opener.getAttribute("data-dialog-open"));
+      if (dialog && dialog.showModal && !dialog.open) dialog.showModal();
+      return;
+    }
+    var closer = target.closest("[data-dialog-close]");
+    if (closer && closer.closest("dialog")) {
+      closer.closest("dialog").close();
+      return;
+    }
+    if (target.tagName === "DIALOG" && target.classList.contains("dialog") && target.open) target.close();
+  });
+
+  // store(key, fallback) — JSON state in localStorage that never throws (a
+  // private window or a full quota falls back to memory): {get, set, update}.
+  function store(key, fallback) {
+    var memory;
+    // Set while the last write did not reach localStorage: what is stored
+    // there is older than memory until a write goes through again.
+    var unsaved = false;
+    var initial = function () { return fallback === undefined ? undefined : JSON.parse(JSON.stringify(fallback)); };
+    function get() {
+      if (!unsaved) {
+        try {
+          var raw = localStorage.getItem(key);
+          if (raw != null) return JSON.parse(raw);
+        } catch (e) { /* storage unavailable: memory below */ }
+      }
+      return memory !== undefined ? memory : initial();
+    }
+    function set(value) {
+      memory = value;
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        unsaved = false;
+      } catch (e) {
+        unsaved = true;
+      }
+      return value;
+    }
+    return { get: get, set: set, update: function (fn) { return set(fn(get())); } };
+  }
+
+  // mock — seeded random data, so a page asks for 90 days of numbers in one
+  // line instead of writing them out; the same seed gives the same data.
+  var FIRST = ["Ana", "Bruno", "Carla", "Diego", "Eduarda", "Felipe", "Gabriela", "Henrique", "Isabela", "João",
+    "Larissa", "Marcos", "Natália", "Otávio", "Paula", "Rafael", "Sofia", "Thiago", "Vanessa", "Lucas"];
+  var LAST = ["Silva", "Santos", "Oliveira", "Souza", "Pereira", "Costa", "Rodrigues", "Almeida", "Nascimento", "Lima",
+    "Araújo", "Fernandes", "Carvalho", "Gomes", "Martins", "Rocha", "Ribeiro", "Barbosa"];
+  var INITIALS = "ABCDEFGHIJLMNOPRSTV".split("");
+  var CITIES = ["São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Porto Alegre, RS",
+    "Salvador, BA", "Recife, PE", "Fortaleza, CE", "Brasília, DF", "Goiânia, GO", "Campinas, SP", "Florianópolis, SC",
+    "Manaus, AM", "Belém, PA", "Vitória, ES", "Natal, RN"];
+
+  function createMock(seed) {
+    var state = seed >>> 0;
+    var names = 0;
+    function random() {
+      state = (state + 0x6d2b79f5) >>> 0;
+      var t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    function int(min, max) { return min + Math.floor(random() * (max - min + 1)); }
+    function pick(list) { return list[Math.floor(random() * list.length)]; }
+    var mock = {
+      seed: function (value) { state = value >>> 0; names = 0; return mock; },
+      random: random,
+      int: int,
+      float: function (min, max, decimals) {
+        var factor = Math.pow(10, decimals == null ? 2 : decimals);
+        return Math.round((min + random() * (max - min)) * factor) / factor;
+      },
+      pick: pick,
+      chance: function (p) { return random() < p; },
+      // There are 360 first/last pairs. A page that draws until the name is
+      // new (do { … } while (used.has(name))) froze the tab past them, so
+      // later draws widen the space: a second surname after 200 (6,480), a
+      // middle initial after 4,000.
+      name: function () {
+        names++;
+        var middle = names > 4000 ? pick(INITIALS) + ". " : "";
+        return pick(FIRST) + " " + middle + (names > 200 ? pick(LAST) + " " : "") + pick(LAST);
+      },
+      city: function () { return pick(CITIES); },
+      // series(n, {start, trend, noise, min, decimals}) — a walk: each value
+      // moves by trend (fraction per step) plus up to ±noise of itself.
+      series: function (n, opts) {
+        opts = opts || {};
+        var value = opts.start == null ? 100 : opts.start;
+        var factor = Math.pow(10, opts.decimals || 0);
+        var out = [];
+        for (var i = 0; i < n; i++) {
+          out.push(Math.max(opts.min == null ? 0 : opts.min, Math.round(value * factor) / factor));
+          value = value * (1 + (opts.trend || 0)) * (1 + (random() * 2 - 1) * (opts.noise == null ? 0.08 : opts.noise));
+        }
+        return out;
+      },
+      // dates(n, {end?, step?: "day" | "week" | "month"}) — ISO dates
+      // (YYYY-MM-DD), oldest first, ending at end (default: today).
+      dates: function (n, opts) {
+        opts = opts || {};
+        var end = opts.end ? new Date(opts.end) : new Date();
+        var out = [];
+        for (var i = n - 1; i >= 0; i--) {
+          var d = new Date(end.getTime());
+          if (opts.step === "month") d.setMonth(d.getMonth() - i);
+          else d.setDate(d.getDate() - i * (opts.step === "week" ? 7 : 1));
+          out.push(d.toISOString().slice(0, 10));
+        }
+        return out;
+      },
+      // rows(n, spec) — n objects; each spec value is a function(i), a list
+      // to pick from, or a constant.
+      rows: function (n, spec) {
+        var out = [];
+        for (var i = 0; i < n; i++) {
+          var row = {};
+          for (var key in spec) {
+            var value = spec[key];
+            row[key] = typeof value === "function" ? value(i) : Array.isArray(value) ? pick(value) : value;
+          }
+          out.push(row);
+        }
+        return out;
+      }
+    };
+    return mock;
+  }
+
+  window.skipShell = { fmt: fmt };
+  window.skipChart = { bar: bar, line: line, donut: donut };
+  window.skipUI = { table: table, kpis: kpis, badge: badge, tabs: tabs, toast: toast };
+  window.skipStore = store;
+  window.skipMock = createMock(20261022);
+})();
+
+</script>
+<style>
+:root {
+  --accent: #E63B36;
+  --accent-text: #B42B27;
+  --accent-contrast: #ffffff;
+  --rosa: #8A3B57;
+  --creme: #FFF7F3;
+  --dourado: #C8871F;
+  --roxo: #3D1A2E;
+  --verde: #16A34A;
+  --rosa-claro: #F5B8C4;
+  --cat-acai: #6B4E9B;
+  --cat-doces: #8A3B57;
+  --cat-outros: #C8871F;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--sans);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFF7F3 0%, #FCE9E4 100%);
+  color: #2b1420;
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+}
+.transition-all, button, a, input, select, textarea { transition: all 180ms ease; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea, button { font-size: 16px; }
+.pm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 10px 18px; border-radius: 10px; border: 1px solid transparent;
+  font-weight: 600; text-decoration: none; background: var(--accent); color: #fff;
+}
+.pm-btn:hover { filter: brightness(0.95); }
+.pm-btn.secondary { background: transparent; color: var(--rosa); border-color: var(--rosa-claro); }
+.pm-btn.success { background: var(--verde); color: #fff; }
+.pm-btn.ghost { background: transparent; color: var(--roxo); border-color: transparent; }
+.pm-btn.danger { background: #B42B27; color: #fff; }
+.pm-btn.sm { min-height: 36px; padding: 6px 12px; font-size: 14px; }
+.pm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pm-icon-btn {
+  min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid transparent;
+  background: transparent; color: var(--roxo); display: inline-flex; align-items: center; justify-content: center;
+}
+.pm-icon-btn:hover { background: rgba(138,59,87,0.08); }
+:focus-visible { outline: 3px solid rgba(200,135,31,0.55); outline-offset: 2px; }
+.pm-input {
+  width: 100%; min-height: 44px; padding: 10px 14px; border-radius: 10px;
+  border: 1px solid #e7c9d2; background: #fff; color: #2b1420;
+}
+.pm-input:focus { outline: none; box-shadow: 0 0 0 4px rgba(200,135,31,0.25); border-color: var(--dourado); }
+.pm-input:disabled { background: #f6eef0; color: #7a6370; }
+.pm-label { display: block; font-weight: 600; font-size: 14px; color: var(--roxo); margin-bottom: 6px; }
+.pm-helper { font-size: 13px; color: #6d5563; margin-top: 4px; }
+.pm-error { font-size: 13px; color: #B42B27; margin-top: 4px; font-weight: 500; }
+.pm-muted { color: #6d5563; }
+.pm-card {
+  background: rgba(255,255,255,0.78);
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(61,26,46,0.06), 0 8px 24px rgba(61,26,46,0.08);
+  padding: 22px;
+}
+.pm-section-title { font-family: var(--serif); font-style: italic; color: var(--rosa); font-size: 26px; margin: 0; font-weight: 600; }
+.pm-sub { color: #6d5563; font-size: 14px; margin: 4px 0 0; }
+.pm-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.7); border: 1px solid #ead5dc; color: var(--roxo);
+}
+.pm-pill.cat-acai { background: #EFEAF8; color: #4a3577; border-color: #d6cbeb; }
+.pm-pill.cat-doces { background: #F8E9EE; color: #6b2c44; border-color: #eccbd7; }
+.pm-pill.cat-outros { background: #FBF1DE; color: #6e4a10; border-color: #efd9a6; }
+.pm-pill.ok { background: #E6F7EC; color: #13693a; border-color: #bfe8cd; }
+.pm-pill.off { background: #F3F0F1; color: #5a4a52; border-color: #ddd3d7; }
+.pm-pill.warn { background: #FFF6D9; color: #6e5300; border-color: #f2e0a0; }
+.pm-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.pm-dot.pulse { background: var(--verde); box-shadow: 0 0 0 0 rgba(22,163,74,0.6); animation: pmpulse 2s infinite; }
+.pm-dot.static { background: #9a8790; }
+@keyframes pmpulse {
+  0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+  100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+.pm-header { background: var(--roxo); color: var(--creme); }
+.pm-brand { font-family: var(--serif); font-style: italic; font-size: 24px; color: var(--creme); font-weight: 600; }
+.pm-diamond { display: inline-block; width: 10px; height: 10px; background: var(--dourado); transform: rotate(45deg); margin-right: 10px; vertical-align: middle; }
+.pm-eyebrow { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: rgba(245,184,196,0.18); color: var(--rosa-claro); }
+.pm-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid #ead5dc; }
+.pm-tab {
+  background: transparent; border: none; border-bottom: 3px solid transparent; color: #6d5563; font-weight: 600;
+  padding: 12px 16px; min-height: 44px; white-space: nowrap;
+}
+.pm-tab[aria-selected="true"] { color: var(--roxo); border-bottom-color: var(--dourado); }
+.pm-tab:hover { color: var(--roxo); }
+.pm-grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.pm-product-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+.pm-thumb {
+  width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(135deg, #FFF7F3 0%, #F5DCE3 100%);
+  display: flex; align-items: center; justify-content: center; position: relative;
+}
+.pm-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pm-thumb svg { width: 64px; height: 64px; opacity: 0.55; }
+.pm-cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.pm-cat-tab {
+  min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid #e7c9d2;
+  background: #fff; color: var(--roxo); font-weight: 600; font-size: 14px;
+}
+.pm-cat-tab[aria-pressed="true"] { background: var(--roxo); color: var(--creme); border-color: var(--roxo); }
+.pm-cat-choice {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; border-radius: 12px;
+  border: 1px solid #e7c9d2; background: #fff; color: var(--roxo); font-weight: 600; font-size: 14px;
+  min-height: 64px; flex: 1;
+}
+.pm-cat-choice[aria-pressed="true"] { border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(200,135,31,0.25); background: #fffaf0; }
+.pm-toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; }
+.pm-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pm-toggle-track { width: 46px; height: 26px; border-radius: 999px; background: #d9c8ce; position: relative; }
+.pm-toggle-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 180ms ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.pm-toggle input:checked + .pm-toggle-track { background: var(--verde); }
+.pm-toggle input:checked + .pm-toggle-track::after { transform: translateX(20px); }
+.pm-toggle input:focus-visible + .pm-toggle-track { outline: 3px solid rgba(200,135,31,0.55); outline-offset: 2px; }
+.pm-mode-card {
+  text-align: left; padding: 16px; border-radius: 14px; border: 1px solid #e7c9d2; background: #fff;
+  color: var(--roxo); display: flex; flex-direction: column; gap: 6px; min-height: 110px;
+}
+.pm-mode-card[aria-pressed="true"] { border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(200,135,31,0.22); background: #fffaf0; }
+.pm-status-hero {
+  border-radius: 16px; padding: 24px; background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(252,233,228,0.9));
+  border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 24px rgba(61,26,46,0.08);
+}
+.pm-hero-label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #6d5563; font-weight: 600; }
+.pm-hero-value { font-family: var(--serif); font-size: 40px; font-style: italic; color: var(--roxo); font-weight: 600; line-height: 1.1; }
+.pm-hero-value.open { color: #13693a; }
+.pm-hero-value.closed { color: #7a3a4a; }
+.pm-hours-table { width: 100%; border-collapse: collapse; }
+.pm-hours-table th, .pm-hours-table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #f0dfe5; vertical-align: middle; }
+.pm-hours-table th { font-size: 13px; color: #6d5563; font-weight: 600; }
+.pm-hours-table input[type="time"] { min-height: 44px; border-radius: 10px; border: 1px solid #e7c9d2; padding: 8px 10px; background: #fff; }
+.pm-hours-table input[type="time"]:disabled { background: #f6eef0; color: #7a6370; }
+.pm-warn-note { background: #FFF6D9; color: #6e5300; border: 1px solid #f2e0a0; border-radius: 10px; padding: 8px 12px; font-size: 13px; margin-top: 6px; }
+.pm-preview { border-radius: 14px; overflow: hidden; background: var(--roxo); color: var(--creme); padding: 20px; }
+.pm-preview .pm-preview-title { font-family: var(--serif); font-style: italic; font-size: 22px; font-weight: 600; line-height: 1.2; }
+.pm-preview .pm-preview-sub { font-size: 13px; color: #e9d7de; margin-top: 8px; line-height: 1.5; }
+.pm-preview .pm-preview-band { margin-top: 12px; background: var(--dourado); color: var(--roxo); padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+.pm-counter { font-size: 12px; color: #6d5563; text-align: right; margin-top: 4px; }
+.pm-counter.near { color: #8a5a00; font-weight: 600; }
+.pm-overlay {
+  position: fixed; inset: 0; background: rgba(61,26,46,0.45); display: none; align-items: center;
+  justify-content: center; padding: 16px; z-index: 100;
+}
+.pm-overlay.open { display: flex; }
+.pm-modal {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 620px; max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(61,26,46,0.3); padding: 24px;
+}
+.pm-shake { animation: pmshake 360ms ease; }
+@keyframes pmshake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.pm-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--roxo); color: var(--creme); padding: 12px 18px; border-radius: 12px; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.25); font-size: 14px; max-width: 92vw; }
+.pm-toast.err { background: #7a1f1c; }
+.pm-hidden { display: none !important; }
+.pm-empty { text-align: center; padding: 48px 16px; }
+.pm-cat-tabs-wrap { overflow-x: auto; }
+.pm-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.pm-cardhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.pm-login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.pm-login-card { width: 100%; max-width: 400px; text-align: center; }
+.pm-login-card h1 { font-family: var(--serif); font-style: italic; font-size: 32px; color: var(--rosa); margin: 12px 0 4px; font-weight: 600; }
+.pm-footer-line { border-top: 1px solid #ead5dc; padding: 18px 0; color: #6d5563; font-size: 13px; text-align: center; margin-top: 32px; }
+.pm-footer-line a { color: var(--rosa); font-weight: 600; }
+.pm-svg-stroke { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.pm-grow { flex: 1; min-width: 0; }
+.pm-search { max-width: 360px; width: 100%; }
+@media (max-width: 720px) {
+  .pm-hero-value { font-size: 30px; }
+  .pm-pills-wrap { flex-wrap: wrap; }
+  .pm-hours-table thead { display: none; }
+  .pm-hours-table, .pm-hours-table tbody, .pm-hours-table tr, .pm-hours-table td { display: block; width: 100%; }
+  .pm-hours-table tr { border-bottom: 1px solid #ead5dc; padding: 12px 0; }
+  .pm-hours-table td { border: none; padding: 6px 0; }
+  .pm-hours-table td[data-label]::before { content: attr(data-label); display: block; font-size: 12px; color: #6d5563; font-weight: 600; margin-bottom: 4px; }
+  .pm-search { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="loginScreen" class="pm-login-wrap pm-hidden" aria-labelledby="loginTitle">
+  <div class="pm-card pm-login-card" id="loginCard">
+    <div>
+      <span class="pm-diamond" aria-hidden="true"></span>
+      <span class="pm-brand" style="color:var(--rosa);">Casa Pomarê</span>
+    </div>
+    <h1 id="loginTitle">Painel interno</h1>
+    <p class="pm-sub">Digite a senha para acessar o painel da loja.</p>
+    <form id="loginForm" novalidate style="margin-top:20px; text-align:left;">
+      <label class="pm-label" for="loginSenha">Senha</label>
+      <input class="pm-input" type="password" id="loginSenha" autocomplete="current-password" placeholder="Digite sua senha">
+      <div id="loginErro" class="pm-error" role="alert" aria-live="assertive"></div>
+      <button type="submit" class="pm-btn" id="loginBtn" style="width:100%; margin-top:14px;">Entrar</button>
+    </form>
+    <p class="pm-helper" style="text-align:center; margin-top:16px; font-size:12px;">Senha padrão: pomare2026</p>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="appScreen" class="pm-hidden" style="flex:1; display:flex; flex-direction:column;">
+  <header class="pm-header">
+    <div class="shell-container" style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 16px; flex-wrap:wrap;">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span class="pm-diamond" aria-hidden="true"></span>
+          <span class="pm-brand">Casa Pomarê</span>
+          <span class="pm-eyebrow">Painel administrativo</span>
+        </div>
+        <p style="margin:6px 0 0; color:#e9d7de; font-size:13px;">Gerencie produtos, horários e textos do site em Orlândia/SP.</p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span id="headerStatusPill" class="pm-pill" style="background:rgba(255,255,255,0.1); color:var(--creme); border-color:rgba(255,255,255,0.2);"></span>
+        <span id="sessaoRestante" style="font-size:12px; color:#e9d7de;"></span>
+        <button type="button" class="pm-btn secondary" id="btnSair" style="color:var(--creme); border-color:rgba(245,184,196,0.5);">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell-container" style="padding:24px 16px; flex:1; width:100%;">
+    <nav class="pm-tabs" role="tablist" aria-label="Seções do painel" style="margin-bottom:24px;">
+      <button class="pm-tab" role="tab" aria-selected="true" aria-controls="secProdutos" id="tabProdutos" data-tab="produtos">Produtos</button>
+      <button class="pm-tab" role="tab" aria-selected="false" aria-controls="secLoja" id="tabLoja" data-tab="loja">Loja aberta / fechada</button>
+      <button class="pm-tab" role="tab" aria-selected="false" aria-controls="secHorarios" id="tabHorarios" data-tab="horarios">Horários</button>
+      <button class="pm-tab" role="tab" aria-selected="false" aria-controls="secTextos" id="tabTextos" data-tab="textos">Textos do site</button>
+    </nav>
+
+    <!-- SECAO PRODUTOS -->
+    <section id="secProdutos" role="tabpanel" aria-labelledby="tabProdutos">
+      <div class="pm-cardhead">
+        <div>
+          <h2 class="pm-section-title">Produtos</h2>
+          <p class="pm-sub">Cadastre açaís, doces e outros itens exibidos no cardápio do site.</p>
+        </div>
+        <button type="button" class="pm-btn" id="btnNovoProduto">+ Novo produto</button>
+      </div>
+
+      <div class="pm-kpi-row" style="margin-bottom:18px;">
+        <div class="pm-card" style="padding:16px;">
+          <div class="pm-hero-label">Total cadastrado</div>
+          <div class="pm-hero-value" style="font-size:30px;" id="kpiTotalProdutos">0</div>
+          <div class="pm-helper">Itens no cardápio</div>
+        </div>
+        <div class="pm-card" style="padding:16px;">
+          <div class="pm-hero-label">Disponíveis agora</div>
+          <div class="pm-hero-value" style="font-size:30px; color:#13693a;" id="kpiDisponiveis">0</div>
+          <div class="pm-helper">Aparecem para pedido</div>
+        </div>
+        <div class="pm-card" style="padding:16px;">
+          <div class="pm-hero-label">Esgotados</div>
+          <div class="pm-hero-value" style="font-size:30px; color:#7a3a4a;" id="kpiEsgotados">0</div>
+          <div class="pm-helper">Marcados como indisponíveis</div>
+        </div>
+      </div>
+
+      <div class="pm-card" style="margin-bottom:18px;">
+        <div class="pm-cardhead" style="margin-bottom:12px;">
+          <div class="pm-cat-tabs" role="group" aria-label="Filtrar por categoria">
+            <button type="button" class="pm-cat-tab" data-cat="todos" aria-pressed="true">Todos</button>
+            <button type="button" class="pm-cat-tab" data-cat="acai" aria-pressed="false">Açaí</button>
+            <button type="button" class="pm-cat-tab" data-cat="doces" aria-pressed="false">Doces</button>
+            <button type="button" class="pm-cat-tab" data-cat="outros" aria-pressed="false">Outros</button>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+            <div class="pm-search">
+              <label class="pm-label" for="buscaProduto">Buscar por nome</label>
+              <input class="pm-input" type="search" id="buscaProduto" placeholder="Ex.: Açaí 500 ml">
+            </div>
+            <div>
+              <label class="pm-label" for="ordenarProduto">Ordenar por</label>
+              <select class="pm-input" id="ordenarProduto">
+                <option value="nome">Nome (A-Z)</option>
+                <option value="preco">Preço (menor)</option>
+                <option value="categoria">Categoria</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <p class="pm-counter" id="contadorProdutos" style="text-align:left; margin:0;" aria-live="polite">0 resultados</p>
+      </div>
+
+      <div id="listaProdutos" class="pm-grid-products" aria-live="polite"></div>
+      <div id="estadoVazioProdutos" class="pm-card pm-empty pm-hidden">
+        <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true" style="color:var(--rosa); opacity:0.6;">
+          <path class="pm-svg-stroke" d="M14 28 L36 14 L58 28 L58 56 L14 56 Z"/>
+          <path class="pm-svg-stroke" d="M28 56 V40 H44 V56"/>
+        </svg>
+        <h3 style="font-family:var(--serif); font-style:italic; color:var(--roxo); margin:14px 0 6px;">Nenhum produto cadastrado ainda</h3>
+        <p class="pm-sub" style="margin-bottom:16px;">Comece adicionando o primeiro item do cardápio.</p>
+        <button type="button" class="pm-btn" id="btnPrimeiroProduto">Adicionar o primeiro produto</button>
+      </div>
+    </section>
+
+    <!-- SECAO LOJA -->
+    <section id="secLoja" role="tabpanel" aria-labelledby="tabLoja" class="pm-hidden">
+      <div class="pm-cardhead">
+        <div>
+          <h2 class="pm-section-title">Loja aberta / fechada</h2>
+          <p class="pm-sub">Defina se a loja aparece como aberta no site. Esse status aparece no cabeçalho do site público.</p>
+        </div>
+      </div>
+
+      <div class="pm-status-hero" style="margin-bottom:20px;">
+        <div class="pm-hero-label">Status agora</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-top:8px; flex-wrap:wrap;">
+          <span id="statusDot" class="pm-dot static" aria-hidden="true" style="width:14px; height:14px;"></span>
+          <span id="statusTexto" class="pm-hero-value">Fechada</span>
+        </div>
+        <p class="pm-helper" id="statusRegra" style="margin-top:10px; font-size:14px;"></p>
+        <p class="pm-helper" id="statusProximo" style="margin-top:4px; font-size:14px;"></p>
+        <p class="pm-helper" style="margin-top:8px;">Esse status aparece no cabeçalho do site público, em tempo real.</p>
+      </div>
+
+      <h3 style="font-size:16px; margin:0 0 4px; color:var(--roxo);">Modo de funcionamento</h3>
+      <p class="pm-sub" style="margin-bottom:14px;">Escolha como o site decide se a loja está aberta.</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:16px;" role="group" aria-label="Modo de funcionamento">
+        <button type="button" class="pm-mode-card" data-modo="automatico" aria-pressed="true">
+          <strong>Automático por horário</strong>
+          <span class="pm-helper" style="margin:0;">Segue a tabela de horários da seção Horários.</span>
+        </button>
+        <button type="button" class="pm-mode-card" data-modo="manual_aberto" aria-pressed="false">
+          <strong>Aberto manualmente</strong>
+          <span class="pm-helper" style="margin:0;">Força a loja aberta até um horário limite.</span>
+        </button>
+        <button type="button" class="pm-mode-card" data-modo="manual_fechado" aria-pressed="false">
+          <strong>Fechado manualmente</strong>
+          <span class="pm-helper" style="margin:0;">Força a loja fechada até um horário limite.</span>
+        </button>
+      </div>
+
+      <div id="blocoExpira" class="pm-card pm-hidden" style="margin-bottom:16px;">
+        <label class="pm-label" for="inputExpira">Ajuste manual válido até</label>
+        <input class="pm-input" type="datetime-local" id="inputExpira" style="max-width:320px;">
+        <p class="pm-helper">Quando o horário passar, o sistema volta sozinho ao modo automático.</p>
+        <div id="expiraErro" class="pm-error"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="pm-btn success" id="btnAplicarModo">Aplicar modo</button>
+        <button type="button" class="pm-btn secondary" id="btnResetModo">Voltar ao automático</button>
+      </div>
+    </section>
+
+    <!-- SECAO HORARIOS -->
+    <section id="secHorarios" role="tabpanel" aria-labelledby="tabHorarios" class="pm-hidden">
+      <div class="pm-cardhead">
+        <div>
+          <h2 class="pm-section-title">Horários</h2>
+          <p class="pm-sub">Horário de funcionamento semanal usado no modo automático.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <span id="pillAlteracoes" class="pm-pill warn pm-hidden">Alterações não salvas</span>
+          <button type="button" class="pm-btn" id="btnSalvarHorarios">Salvar horários</button>
+        </div>
+      </div>
+      <div class="pm-card">
+        <p class="pm-helper" style="margin-top:0; margin-bottom:12px;">Marque "Aberto" para cada dia. Horários que atravessam a meia-noite são permitidos e geram apenas um aviso.</p>
+        <div style="overflow-x:auto;">
+          <table class="pm-hours-table" id="tabelaHorarios">
+            <thead>
+              <tr>
+                <th scope="col">Dia</th>
+                <th scope="col">Aberto</th>
+                <th scope="col">Abertura</th>
+                <th scope="col">Fechamento</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyHorarios"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECAO TEXTOS -->
+    <section id="secTextos" role="tabpanel" aria-labelledby="tabTextos" class="pm-hidden">
+      <div class="pm-cardhead">
+        <div>
+          <h2 class="pm-section-title">Textos do site</h2>
+          <p class="pm-sub">Edite as chamadas da página inicial. A prévia mostra como ficará no site.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px; align-items:start;">
+        <div class="pm-card stack-form">
+          <div style="margin-bottom:16px;">
+            <label class="pm-label" for="inputTituloHero">Título do hero</label>
+            <input class="pm-input" type="text" id="inputTituloHero" maxlength="60">
+            <div class="pm-counter" id="contTitulo">0/60</div>
+            <div class="pm-helper">Frase principal de destaque no topo do site.</div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label class="pm-label" for="inputSubtituloHero">Subtítulo do hero</label>
+            <textarea class="pm-input" id="inputSubtituloHero" rows="3" maxlength="140" style="resize:vertical;"></textarea>
+            <div class="pm-counter" id="contSubtitulo">0/140</div>
+            <div class="pm-helper">Texto de apoio logo abaixo do título.</div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+              <label class="pm-toggle" for="toggleAviso">
+                <input type="checkbox" id="toggleAviso">
+                <span class="pm-toggle-track" aria-hidden="true"></span>
+                <span style="font-weight:600;">Faixa de aviso ativa</span>
+              </label>
+            </div>
+            <label class="pm-label" for="inputAviso" style="margin-top:8px;">Texto da faixa de aviso</label>
+            <input class="pm-input" type="text" id="inputAviso" maxlength="80">
+            <div class="pm-counter" id="contAviso">0/80</div>
+            <div class="pm-helper">Ex.: Entrega grátis acima de R$ 40 no bairro centro.</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="pm-btn success" id="btnSalvarTextos">Salvar textos</button>
+            <button type="button" class="pm-btn secondary" id="btnRestaurarTextos">Restaurar padrão</button>
+          </div>
+        </div>
+        <div>
+          <div class="pm-hero-label" style="margin-bottom:8px;">Prévia no site</div>
+          <div class="pm-preview" aria-live="polite">
+            <div class="pm-preview-title" id="prevTitulo"></div>
+            <div class="pm-preview-sub" id="prevSubtitulo"></div>
+            <div class="pm-preview-band pm-hidden" id="prevAviso"></div>
+          </div>
+          <p class="pm-helper">A prévia atualiza enquanto você digita.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="pm-footer-line">
+      Casa Pomarê — painel interno · <a href="index.html">Ver site</a>
+    </footer>
+  </main>
+</div>
+
+<!-- MODAL PRODUTO -->
+<div class="pm-overlay" id="overlayProduto" role="presentation">
+  <div class="pm-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalProduto">
+    <div class="pm-cardhead" style="margin-bottom:16px;">
+      <h2 class="pm-section-title" id="tituloModalProduto">Novo produto</h2>
+      <button type="button" class="pm-icon-btn" id="btnFecharProduto" aria-label="Fechar modal">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path class="pm-svg-stroke" d="M6 6 L18 18 M18 6 L6 18"/></svg>
+      </button>
+    </div>
+    <form id="formProduto" novalidate>
+      <div style="margin-bottom:14px;">
+        <label class="pm-label" for="pNome">Nome do produto</label>
+        <input class="pm-input" type="text" id="pNome" maxlength="80" placeholder="Ex.: Açaí 500 ml com granola">
+        <div class="pm-error pm-hidden" id="errNome"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="pm-label" for="pDescricao">Descrição</label>
+        <textarea class="pm-input" id="pDescricao" rows="2" maxlength="160" placeholder="Ex.: Açaí cremoso com banana e paçoca" style="resize:vertical;"></textarea>
+        <div class="pm-helper">Uma frase curta para o cliente entender o produto.</div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="pm-label" for="pPreco">Preço (R$)</label>
+        <input class="pm-input" type="text" inputmode="decimal" id="pPreco" placeholder="0,00">
+        <div class="pm-helper">Aceita vírgula ou ponto. Ex.: 18,50</div>
+        <div class="pm-error pm-hidden" id="errPreco"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <span class="pm-label" id="labelCategoria">Categoria</span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;" role="group" aria-labelledby="labelCategoria">
+          <button type="button" class="pm-cat-choice" data-catchoice="acai" aria-pressed="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path class="pm-svg-stroke" d="M12 3 C7 9 6 13 12 21 C18 13 17 9 12 3 Z"/></svg>Açaí
+          </button>
+          <button type="button" class="pm-cat-choice" data-catchoice="doces" aria-pressed="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path class="pm-svg-stroke" d="M12 4 L20 12 L12 20 L4 12 Z"/></svg>Doces
+          </button>
+          <button type="button" class="pm-cat-choice" data-catchoice="outros" aria-pressed="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle class="pm-svg-stroke" cx="12" cy="12" r="8"/></svg>Outros
+          </button>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="pm-toggle" for="pDisponivel">
+          <input type="checkbox" id="pDisponivel" checked>
+          <span class="pm-toggle-track" aria-hidden="true"></span>
+          <span style="font-weight:600;">Disponível para pedido</span>
+        </label>
+      </div>
+      <div style="margin-bottom:14px;">
+        <span class="pm-label">Imagem do produto</span>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div class="pm-thumb" id="previewImagem" style="width:140px; aspect-ratio:1/1;"></div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button type="button" class="pm-btn secondary sm" id="btnEscolherImagem">Escolher do dispositivo</button>
+            <button type="button" class="pm-btn ghost sm pm-hidden" id="btnRemoverImagem">Remover imagem</button>
+          </div>
+        </div>
+        <input type="file" id="inputImagem" accept="image/jpeg,image/png,image/webp" class="pm-hidden">
+        <div class="pm-helper">JPG, PNG ou WebP até 8 MB. Use a câmera do celular pelo seletor de arquivos.</div>
+        <div class="pm-error pm-hidden" id="errImagem"></div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:20px;">
+        <button type="button" class="pm-btn secondary" id="btnCancelarProduto">Cancelar</button>
+        <button type="submit" class="pm-btn success" id="btnSalvarProduto">Salvar produto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR -->
+<div class="pm-overlay" id="overlayExcluir" role="presentation">
+  <div class="pm-modal" role="dialog" aria-modal="true" aria-labelledby="tituloExcluir" style="max-width:420px;">
+    <h2 class="pm-section-title" id="tituloExcluir">Excluir produto?</h2>
+    <p class="pm-sub" id="textoExcluir" style="margin:10px 0 18px;"></p>
+    <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+      <button type="button" class="pm-btn secondary" id="btnCancelarExcluir">Cancelar</button>
+      <button type="button" class="pm-btn danger" id="btnConfirmarExcluir">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastArea" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ===================== CONSTANTES =====================
+  var SENHA_CORRETA = "pomare2026";
+  var CHAVE_SESSAO = "casapomare_sessao_v10";
+  var CHAVE_PRODUTOS = "casapomare_produtos_v10";
+  var CHAVE_CONFIG = "casapomare_config_v10";
+  var DURACAO_SESSAO_MS = 8 * 60 * 60 * 1000;
+  var MAX_ORIGEM_BYTES = 8 * 1024 * 1024;
+  var LIMITE_BASE64_BYTES = 400 * 1024;
+  var DIAS = [
+    { id: "dom", nome: "Domingo", curto: "Dom" },
+    { id: "seg", nome: "Segunda", curto: "Seg" },
+    { id: "ter", nome: "Terça", curto: "Ter" },
+    { id: "qua", nome: "Quarta", curto: "Qua" },
+    { id: "qui", nome: "Quinta", curto: "Qui" },
+    { id: "sex", nome: "Sexta", curto: "Sex" },
+    { id: "sab", nome: "Sábado", curto: "Sáb" }
+  ];
+  var CATEGORIAS = { acai: "Açaí", doces: "Doces", outros: "Outros" };
+
+  var CONFIG_PADRAO = {
+    modo: "automatico",
+    manual_valor: null,
+    manual_expira: null,
+    titulo_hero: "Açaí de verdade, feito na hora",
+    subtitulo_hero: "Cremoso, artesanal e do jeitinho que você gosta. Peça pelo WhatsApp e receba em casa.",
+    aviso_ativo: false,
+    aviso_texto: "",
+    horarios: {
+      dom: { aberto: false, ini: "", fim: "" },
+      seg: { aberto: true, ini: "08:00", fim: "19:00" },
+      ter: { aberto: true, ini: "08:00", fim: "19:00" },
+      qua: { aberto: true, ini: "08:00", fim: "19:00" },
+      qui: { aberto: true, ini: "08:00", fim: "19:00" },
+      sex: { aberto: true, ini: "08:00", fim: "19:00" },
+      sab: { aberto: true, ini: "08:00", fim: "18:00" }
+    }
+  };
+
+  // ===================== ESTADO =====================
+  var produtos = [];
+  var config = null;
+  var horariosRascunho = null;
+  var textosRascunho = null;
+  var filtroCategoria = "todos";
+  var buscaTexto = "";
+  var ordenacao = "nome";
+  var catSelecionada = "acai";
+  var imagemAtual = "";
+  var imagemUrlPreview = "";
+  var editandoId = null;
+  var idExcluir = null;
+  var contadorId = 0;
+  var erros3 = 0;
+  var bloqueadoAte = 0;
+  var modoRascunho = "automatico";
+  var expiraRascunho = null;
+  var timerStatus = null;
+  var timerSessao = null;
+
+  // ===================== UTILITARIOS =====================
+  function escapeHtml(valor) {
+    try {
+      return String(valor === null || valor === undefined ? "" : valor)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    } catch (e) { return ""; }
+  }
+
+  function gerarId() {
+    contadorId = contadorId + 1;
+    return "p" + Date.now() + "_" + contadorId;
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function toast(msg, tipo) {
+    try {
+      var area = $("toastArea");
+      var el = document.createElement("div");
+      el.className = "pm-toast" + (tipo === "erro" ? " err" : "");
+      el.setAttribute("role", "status");
+      el.textContent = msg;
+      area.appendChild(el);
+      setTimeout(function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 2600);
+    } catch (e) { /* sem ação */ }
+  }
+
+  function formatarBRL(valor) {
+    var n = Number(valor) || 0;
+    return "R$ " + n.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function parsePreco(texto) {
+    try {
+      var limpo = String(texto || "").replace(/[^\d,.]/g, "");
+      if (limpo.indexOf(",") !== -1) {
+        limpo = limpo.replace(/\./g, "").replace(",", ".");
+      }
+      var n = parseFloat(limpo);
+      return isNaN(n) ? 0 : n;
+    } catch (e) { return 0; }
+  }
+
+  function aplicarMascaraPreco(input) {
+    try {
+      var v = input.value.replace(/[^\d,.]/g, "");
+      input.value = v;
+    } catch (e) { /* ignore */ }
+  }
+
+  function svgCategoria(cat) {
+    var s = '<svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" style="opacity:0.55;">';
+    if (cat === "acai") {
+      s += '<path d="M32 6 C18 24 16 34 32 58 C48 34 46 24 32 6 Z" fill="none" stroke="#6B4E9B" stroke-width="2"/>';
+    } else if (cat === "doces") {
+      s += '<path d="M32 8 L56 32 L32 56 L8 32 Z" fill="none" stroke="#8A3B57" stroke-width="2"/>';
+    } else {
+      s += '<circle cx="32" cy="32" r="22" fill="none" stroke="#C8871F" stroke-width="2"/>';
+    }
+    return s + "</svg>";
+  }
+
+  function seloCategoria(cat) {
+    var nome = CATEGORIAS[cat] || "Outros";
+    return '<span class="pm-pill cat-' + escapeHtml(cat) + '">' + escapeHtml(nome) + "</span>";
+  }
+
+  function validarProdutoObj(p) {
+    return p && typeof p.nome === "string" && typeof p.preco === "number";
+  }
+
+  // ===================== CAMADA DE DADOS =====================
+  var API = {
+    // Pode ser substituído por fetch ao backend (GET /produtos)
+    getProdutos: function () {
+      try {
+        var raw = localStorage.getItem(CHAVE_PRODUTOS);
+        if (!raw) return [];
+        var lista = JSON.parse(raw);
+        if (!Array.isArray(lista)) return [];
+        var saida = [];
+        for (var i = 0; i < lista.length; i++) {
+          var p = lista[i];
+          if (!validarProdutoObj(p)) continue;
+          var urlImg = "";
+          if (p.imagem && typeof p.imagem === "object" && p.imagem.b64) {
+            urlImg = blobParaUrl(p.imagem.b64);
+          }
+          saida.push({
+            id: p.id,
+            nome: p.nome,
+            descricao: p.descricao || "",
+            preco: Number(p.preco) || 0,
+            categoria: CATEGORIAS[p.categoria] ? p.categoria : "outros",
+            disponivel: p.disponivel !== false,
+            imagem: urlImg,
+            imagemBlobB64: (p.imagem && p.imagem.b64) ? p.imagem.b64 : ""
+          });
+        }
+        return saida;
+      } catch (e) {
+        return [];
+      }
+    },
+    // Pode ser substituído por fetch ao backend (PUT /produtos)
+    setProdutos: function (lista) {
+      try {
+        var serial = [];
+        for (var i = 0; i < lista.length; i++) {
+          var p = lista[i];
+          serial.push({
+            id: p.id,
+            nome: p.nome,
+            descricao: p.descricao,
+            preco: p.preco,
+            categoria: p.categoria,
+            disponivel: p.disponivel,
+            imagem: p.imagemBlobB64 ? { b64: p.imagemBlobB64 } : ""
+          });
+        }
+        localStorage.setItem(CHAVE_PRODUTOS, JSON.stringify(serial));
+        return true;
+      } catch (e) {
+        if (e && (e.name === "QuotaExceededError" || e.code === 22)) {
+          toast("Armazenamento cheio. Remova algumas imagens de produtos para liberar espaço.", "erro");
+        } else {
+          toast("Não foi possível salvar os produtos.", "erro");
+        }
+        return false;
+      }
+    },
+    // Pode ser substituído por fetch ao backend (GET /config)
+    getConfig: function () {
+      try {
+        var raw = localStorage.getItem(CHAVE_CONFIG);
+        if (!raw) return JSON.parse(JSON.stringify(CONFIG_PADRAO));
+        var c = JSON.parse(raw);
+        var base = JSON.parse(JSON.stringify(CONFIG_PADRAO));
+        for (var k in c) {
+          if (Object.prototype.hasOwnProperty.call(c, k)) base[k] = c[k];
+        }
+        return base;
+      } catch (e) {
+        return JSON.parse(JSON.stringify(CONFIG_PADRAO));
+      }
+    },
+    // Pode ser substituído por fetch ao backend (PUT /config)
+    setConfig: function (c) {
+      try {
+        localStorage.setItem(CHAVE_CONFIG, JSON.stringify(c));
+        return true;
+      } catch (e) {
+        if (e && (e.name === "QuotaExceededError" || e.code === 22)) {
+          toast("Armazenamento cheio. Remova algumas imagens de produtos para liberar espaço.", "erro");
+        } else {
+          toast("Não foi possível salvar a configuração.", "erro");
+        }
+        return false;
+      }
+    }
+  };
+
+  // Converte dataURL para Blob e guarda o base64 puro (armazenado sem dataURL cru)
+  function dataUrlParaB64(dataUrl) {
+    var idx = dataUrl.indexOf(",");
+    return idx === -1 ? "" : dataUrl.substring(idx + 1);
+  }
+
+  function blobParaUrl(b64) {
+    try {
+      var bin = atob(b64);
+      var arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var blob = new Blob([arr], { type: "image/jpeg" });
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function dataUrlParaBlobUrl(dataUrl) {
+    try {
+      var b64 = dataUrlParaB64(dataUrl);
+      return blobParaUrl(b64);
+    } catch (e) { return ""; }
+  }
+
+  // ===================== SESSAO =====================
+  function sessaoValida() {
+    try {
+      var raw = localStorage.getItem(CHAVE_SESSAO);
+      if (!raw) return false;
+      var s = JSON.parse(raw);
+      if (!s || typeof s.ts !== "number") return false;
+      if (Date.now() - s.ts > DURACAO_SESSAO_MS) {
+        localStorage.removeItem(CHAVE_SESSAO);
+        return false;
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function criarSessao() {
+    try {
+      localStorage.setItem(CHAVE_SESSAO, JSON.stringify({ ts: Date.now() }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function encerrarSessao() {
+    try { localStorage.removeItem(CHAVE_SESSAO); } catch (e) { /* ignore */ }
+    if (timerSessao) { clearInterval(timerSessao); timerSessao = null; }
+    mostrarLogin();
+  }
+
+  function mostrarLogin() {
+    try {
+      $("appScreen").classList.add("pm-hidden");
+      $("loginScreen").classList.remove("pm-hidden");
+      $("loginSenha").value = "";
+      $("loginErro").textContent = "";
+      setTimeout(function () { $("loginSenha").focus(); }, 0);
+    } catch (e) { /* ignore */ }
+  }
+
+  function mostrarApp() {
+    try {
+      $("loginScreen").classList.add("pm-hidden");
+      $("appScreen").classList.remove("pm-hidden");
+      iniciarTimerSessao();
+    } catch (e) { /* ignore */ }
+  }
+
+  function iniciarTimerSessao() {
+    if (timerSessao) clearInterval(timerSessao);
+    atualizarRestante();
+    timerSessao = setInterval(function () {
+      try {
+        if (!sessaoValida()) {
+          encerrarSessao();
+          toast("Sua sessão expirou. Entre novamente.", "erro");
+          return;
+        }
+        atualizarRestante();
+      } catch (e) { /* ignore */ }
+    }, 30000);
+  }
+
+  function atualizarRestante() {
+    try {
+      var s = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || "{}");
+      if (!s.ts) return;
+      var restante = DURACAO_SESSAO_MS - (Date.now() - s.ts);
+      var h = Math.floor(restante / 3600000);
+      var m = Math.floor((restante % 3600000) / 60000);
+      $("sessaoRestante").textContent = "Sessão: " + h + "h " + (m < 10 ? "0" : "") + m + "min";
+    } catch (e) { /* ignore */ }
+  }
+
+  function tentarLogin() {
+    try {
+      if (Date.now() < bloqueadoAte) {
+        $("loginErro").textContent = "Aguarde para tentar novamente.";
+        return;
+      }
+      var senha = $("loginSenha").value;
+      if (senha === SENHA_CORRETA) {
+        erros3 = 0;
+        $("loginErro").textContent = "";
+        criarSessao();
+        mostrarApp();
+        iniciarTudo();
+        return;
+      }
+      erros3 = erros3 + 1;
+      $("loginErro").textContent = "Senha incorreta. Tente novamente.";
+      $("loginSenha").value = "";
+      var card = $("loginCard");
+      card.classList.remove("pm-shake");
+      void card.offsetWidth;
+      card.classList.add("pm-shake");
+      if (erros3 >= 3) {
+        erros3 = 0;
+        bloqueadoAte = Date.now() + 2000;
+        $("loginBtn").disabled = true;
+        setTimeout(function () {
+          $("loginBtn").disabled = false;
+          $("loginSenha").focus();
+        }, 2000);
+      }
+      $("loginSenha").focus();
+    } catch (e) { /* ignore */ }
+  }
+
+  // ===================== CONFIG / STATUS =====================
+  function dataParaMinutos(d) {
+    return d.getHours() * 60 + d.getMinutes();
+  }
+
+  function hhmmParaMinutos(s) {
+    if (!s || s.indexOf(":") === -1) return null;
+    var p = s.split(":");
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+
+  // Calcula se o horário semanal está aberto.
+  // Tratamento de virou o dia: se fechamento < abertura, o intervalo atravessa a meia-noite.
+  // Nesse caso, o dia de início é o dia anterior ao atual: se o dia anterior está aberto e
+  // o agora é >= abertura (no dia anterior), ou agora < fechamento (no dia atual, parte que
+  // avança depois da meia-noite), a loja está aberta.
+  // Fechamento é exclusivo: agora == fechamento => fechada.
+  function estaAbertoNoHorario(agora, horarios) {
+    try {
+      var idxHoje = agora.getDay();
+      var minutos = dataParaMinutos(agora);
+      var hoje = horarios[DIAS[idxHoje].id];
+      var ontem = horarios[DIAS[(idxHoje + 6) % 7].id];
+
+      if (hoje && hoje.aberto && hoje.ini && hoje.fim) {
+        var ini = hhmmParaMinutos(hoje.ini);
+        var fim = hhmmParaMinutos(hoje.fim);
+        if (fim > ini) {
+          if (minutos >= ini && minutos < fim) return true;
+        }
+      }
+      if (ontem && ontem.aberto && ontem.ini && ontem.fim) {
+        var ini2 = hhmmParaMinutos(ontem.ini);
+        var fim2 = hhmmParaMinutos(ontem.fim);
+        if (fim2 <= ini2 && minutos < fim2) return true;
+      }
+      if (hoje && hoje.aberto && hoje.ini && hoje.fim) {
+        var ini3 = hhmmParaMinutos(hoje.ini);
+        var fim3 = hhmmParaMinutos(hoje.fim);
+        if (fim3 <= ini3 && minutos >= ini3) return true;
+      }
+      return false;
+    } catch (e) { return false; }
+  }
+
+  function proximaAbertura(agora, horarios) {
+    try {
+      for (var d = 0; d < 8; d++) {
+        var idx = (agora.getDay() + d) % 7;
+        var h = horarios[DIAS[idx].id];
+        if (!h || !h.aberto || !h.ini) continue;
+        var ini = hhmmParaMinutos(h.ini);
+        if (d === 0 && ini <= dataParaMinutos(agora)) continue;
+        var nomeDia = d === 0 ? "hoje" : (d === 1 ? "amanhã" : DIAS[idx].nome.toLowerCase());
+        if (d === 0) nomeDia = "hoje";
+        else if (d === 1) nomeDia = "amanhã";
+        else nomeDia = (idx === 0 ? "domingo" : DIAS[idx].nome.toLowerCase().replace("ç", "c"));
+        return "Abre " + nomeDia + " às " + h.ini;
+      }
+      return "Sem horário de abertura programado";
+    } catch (e) { return ""; }
+  }
+
+  function calcularStatus(c, agora) {
+    try {
+      if (c.modo !== "automatico" && c.manual_expira) {
+        var exp = new Date(c.manual_expira);
+        if (!isNaN(exp.getTime()) && agora.getTime() < exp.getTime()) {
+          var aberto = c.modo === "manual_aberto";
+          var rotulo = formatarDataHora(exp);
+          return {
+            aberto: aberto,
+            regra: "Status definido por: Ajuste manual até " + rotulo,
+            proximo: aberto ? "" : proximaAbertura(agora, c.horarios)
+          };
+        }
+      }
+      var ab = estaAbertoNoHorario(agora, c.horarios);
+      return {
+        aberto: ab,
+        regra: "Status definido por: Horário de funcionamento",
+        proximo: ab ? "" : proximaAbertura(agora, c.horarios)
+      };
+    } catch (e) {
+      return { aberto: false, regra: "", proximo: "" };
+    }
+  }
+
+  function formatarDataHora(d) {
+    var dd = ("0" + d.getDate()).slice(-2);
+    var mm = ("0" + (d.getMonth() + 1)).slice(-2);
+    var hh = ("0" + d.getHours()).slice(-2);
+    var mi = ("0" + d.getMinutes()).slice(-2);
+    return dd + "/" + mm + " às " + hh + ":" + mi;
+  }
+
+  function renderStatus() {
+    try {
+      var agora = new Date();
+      var st = calcularStatus(config, agora);
+      var dot = $("statusDot");
+      var txt = $("statusTexto");
+      var pill = $("headerStatusPill");
+      if (st.aberto) {
+        dot.className = "pm-dot pulse";
+        txt.textContent = "Aberta";
+        txt.className = "pm-hero-value open";
+        pill.className = "pm-pill ok";
+        pill.textContent = "Loja aberta";
+      } else {
+        dot.className = "pm-dot static";
+        txt.textContent = "Fechada";
+        txt.className = "pm-hero-value closed";
+        pill.className = "pm-pill off";
+        pill.textContent = "Loja fechada";
+      }
+      $("statusRegra").textContent = st.regra;
+      $("statusProximo").textContent = st.proximo;
+    } catch (e) { /* ignore */ }
+  }
+
+  function iniciarTimerStatus() {
+    if (timerStatus) clearInterval(timerStatus);
+    timerStatus = setInterval(function () {
+      renderStatus();
+      if (config && config.modo !== "automatico" && config.manual_expira) {
+        if (Date.now() >= new Date(config.manual_expira).getTime()) {
+          config.modo = "automatico";
+          config.manual_expira = null;
+          config.manual_valor = null;
+          API.setConfig(config);
+          atualizarModoUI();
+          toast("Ajuste manual expirou. Voltou ao horário automático.");
+        }
+      }
+    }, 20000);
+  }
+
+  // ===================== SECAO PRODUTOS =====================
+  function produtosFiltrados() {
+    var lista = produtos.slice();
+    var termo = buscaTexto.trim().toLowerCase();
+    if (filtroCategoria !== "todos") {
+      lista = lista.filter(function (p) { return p.categoria === filtroCategoria; });
+    }
+    if (termo) {
+      lista = lista.filter(function (p) {
+        return p.nome.toLowerCase().indexOf(termo) !== -1;
+      });
+    }
+    lista.sort(function (a, b) {
+      if (ordenacao === "preco") return a.preco - b.preco;
+      if (ordenacao === "categoria") {
+        var ca = CATEGORIAS[a.categoria], cb = CATEGORIAS[b.categoria];
+        return ca.localeCompare(cb) || a.nome.localeCompare(b.nome);
+      }
+      return a.nome.localeCompare(b.nome);
+    });
+    return lista;
+  }
+
+  function renderProdutos() {
+    try {
+      var lista = produtosFiltrados();
+      var cont = $("listaProdutos");
+      var vazio = $("estadoVazioProdutos");
+      $("kpiTotalProdutos").textContent = produtos.length;
+      var disp = produtos.filter(function (p) { return p.disponivel; }).length;
+      $("kpiDisponiveis").textContent = disp;
+      $("kpiEsgotados").textContent = produtos.length - disp;
+
+      if (produtos.length === 0) {
+        cont.innerHTML = "";
+        vazio.classList.remove("pm-hidden");
+        $("contadorProdutos").textContent = "0 resultados";
+        return;
+      }
+      vazio.classList.add("pm-hidden");
+      $("contadorProdutos").textContent = lista.length + (lista.length === 1 ? " resultado" : " resultados");
+
+      if (lista.length === 0) {
+        cont.innerHTML = '<div class="pm-card pm-empty" style="grid-column:1/-1;"><p class="pm-sub">Nenhum produto corresponde à busca ou ao filtro.</p></div>';
+        return;
+      }
+
+      var html = "";
+      for (var i = 0; i < lista.length; i++) {
+        html += cardProduto(lista[i]);
+      }
+      cont.innerHTML = html;
+    } catch (e) { /* ignore */ }
+  }
+
+  function cardProduto(p) {
+    var thumb = p.imagem
+      ? '<img src="' + escapeHtml(p.imagem) + '" alt="Foto de ' + escapeHtml(p.nome) + '">'
+      : svgCategoria(p.categoria);
+    var badge = p.disponivel
+      ? '<span class="pm-pill ok">Disponível</span>'
+      : '<span class="pm-pill off">Esgotado</span>';
+    var id = escapeHtml(p.id);
+    return (
+      '<article class="pm-card pm-product-card">' +
+        '<div class="pm-thumb">' + thumb + '</div>' +
+        '<div>' +
+          '<h3 style="margin:0; font-size:17px; color:var(--roxo);">' + escapeHtml(p.nome) + '</h3>' +
+          '<p class="pm-helper" style="margin:4px 0 0; min-height:20px;">' + escapeHtml(p.descricao) + '</p>' +
+        '</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
+          seloCategoria(p.categoria) + badge +
+        '</div>' +
+        '<div style="font-family:var(--serif); font-size:24px; font-style:italic; color:var(--roxo);">' + formatarBRL(p.preco) + '</div>' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">' +
+          '<label class="pm-toggle" style="min-height:36px;">' +
+            '<input type="checkbox" data-toggle-id="' + id + '"' + (p.disponivel ? ' checked' : '') + ' aria-label="Marcar ' + escapeHtml(p.nome) + ' como disponível">' +
+            '<span class="pm-toggle-track" aria-hidden="true"></span>' +
+            '<span style="font-size:13px; font-weight:600;">Disponível</span>' +
+          '</label>' +
+          '<div style="display:flex; gap:6px;">' +
+            '<button type="button" class="pm-btn secondary sm" data-editar="' + id + '">Editar</button>' +
+            '<button type="button" class="pm-btn ghost sm" data-excluir="' + id + '" style="color:#B42B27;">Excluir</button>' +
+          '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  function encontrarProduto(id) {
+    for (var i = 0; i < produtos.length; i++) {
+      if (produtos[i].id === id) return produtos[i];
+    }
+    return null;
+  }
+
+  function salvarProdutos() {
+    API.setProdutos(produtos);
+  }
+
+  function abrirModalProduto(produto) {
+    try {
+      limparErrosProduto();
+      editandoId = produto ? produto.id : null;
+      $("tituloModalProduto").textContent = produto ? "Editar produto" : "Novo produto";
+      $("pNome").value = produto ? produto.nome : "";
+      $("pDescricao").value = produto ? produto.descricao : "";
+      $("pPreco").value = produto ? String(produto.preco).replace(".", ",") : "";
+      $("pDisponivel").checked = produto ? produto.disponivel : true;
+      catSelecionada = produto ? produto.categoria : "acai";
+      imagemAtual = produto ? (produto.imagemBlobB64 || "") : "";
+      imagemUrlPreview = produto ? produto.imagem : "";
+      atualizarCategoriaUI();
+      atualizarPreviewImagem();
+      $("overlayProduto").classList.add("open");
+      setTimeout(function () { $("pNome").focus(); }, 0);
+    } catch (e) { /* ignore */ }
+  }
+
+  function fecharModalProduto() {
+    $("overlayProduto").classList.remove("open");
+    editandoId = null;
+  }
+
+  function limparErrosProduto() {
+    $("errNome").classList.add("pm-hidden");
+    $("errPreco").classList.add("pm-hidden");
+    $("errImagem").classList.add("pm-hidden");
+    $("errNome").textContent = "";
+    $("errPreco").textContent = "";
+    $("errImagem").textContent = "";
+  }
+
+  function atualizarCategoriaUI() {
+    var botoes = document.querySelectorAll("[data-catchoice]");
+    for (var i = 0; i < botoes.length; i++) {
+      botoes[i].setAttribute("aria-pressed", botoes[i].getAttribute("data-catchoice") === catSelecionada ? "true" : "false");
+    }
+  }
+
+  function atualizarPreviewImagem() {
+    var prev = $("previewImagem");
+    if (imagemUrlPreview) {
+      prev.innerHTML = '<img src="' + escapeHtml(imagemUrlPreview) + '" alt="Prévia da imagem do produto">';
+      $("btnRemoverImagem").classList.remove("pm-hidden");
+    } else {
+      prev.innerHTML = svgCategoria(catSelecionada);
+      $("btnRemoverImagem").classList.add("pm-hidden");
+    }
+  }
+
+  function carregarImagemDoArquivo(file) {
+    try {
+      if (["image/jpeg", "image/png", "image/webp"].indexOf(file.type) === -1) {
+        $("errImagem").textContent = "Formato não aceito. Use JPEG, PNG ou WebP.";
+        $("errImagem").classList.remove("pm-hidden");
+        return;
+      }
+      if (file.size > MAX_ORIGEM_BYTES) {
+        $("errImagem").textContent = "Arquivo acima de 8 MB. Escolha uma foto menor.";
+        $("errImagem").classList.remove("pm-hidden");
+        return;
+      }
+      var leitor = new FileReader();
+      leitor.onload = function (ev) {
+        try {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var dataUrl = comprimirImagem(img, 900, 0.75);
+              if (dataUrl.length > LIMITE_BASE64_BYTES) {
+                dataUrl = comprimirImagem(img, 700, 0.6);
+              }
+              if (dataUrl.length > LIMITE_BASE64_BYTES) {
+                $("errImagem").textContent = "Imagem muito grande. Escolha uma foto menor.";
+                $("errImagem").classList.remove("pm-hidden");
+                return;
+              }
+              $("errImagem").classList.add("pm-hidden");
+              imagemAtual = dataUrlParaB64(dataUrl);
+              if (imagemUrlPreview && imagemUrlPreview.indexOf("blob:") === 0) {
+                URL.revokeObjectURL(imagemUrlPreview);
+              }
+              imagemUrlPreview = dataUrlParaBlobUrl(dataUrl);
+              atualizarPreviewImagem();
+            } catch (e) {
+              $("errImagem").textContent = "Não foi possível processar a imagem.";
+              $("errImagem").classList.remove("pm-hidden");
+            }
+          };
+          img.onerror = function () {
+            $("errImagem").textContent = "Não foi possível ler esta imagem.";
+            $("errImagem").classList.remove("pm-hidden");
+          };
+          img.src = ev.target.result;
+        } catch (e) { /* ignore */ }
+      };
+      leitor.readAsDataURL(file);
+    } catch (e) { /* ignore */ }
+  }
+
+  function comprimirImagem(img, larguraMax, qualidade) {
+    var escala = Math.min(1, larguraMax / img.width);
+    var w = Math.round(img.width * escala);
+    var h = Math.round(img.height * escala);
+    var canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", qualidade);
+  }
+
+  function validarFormularioProduto() {
+    limparErrosProduto();
+    var ok = true;
+    var nome = $("pNome").value.trim();
+    if (!nome) {
+      $("errNome").textContent = "Informe o nome do produto.";
+      $("errNome").classList.remove("pm-hidden");
+      ok = false;
+    }
+    var preco = parsePreco($("pPreco").value);
+    if (!(preco > 0)) {
+      $("errPreco").textContent = "O preço deve ser maior que zero.";
+      $("errPreco").classList.remove("pm-hidden");
+      ok = false;
+    }
+    return ok;
+  }
+
+  function salvarFormularioProduto(e) {
+    try {
+      e.preventDefault();
+      if (!validarFormularioProduto()) return;
+      var dados = {
+        nome: $("pNome").value.trim(),
+        descricao: $("pDescricao").value.trim(),
+        preco: parsePreco($("pPreco").value),
+        categoria: catSelecionada,
+        disponivel: $("pDisponivel").checked,
+        imagem: imagemUrlPreview,
+        imagemBlobB64: imagemAtual
+      };
+      if (editandoId) {
+        var existente = encontrarProduto(editandoId);
+        if (existente) {
+          if (existente.imagem && existente.imagem.indexOf("blob:") === 0 && existente.imagem !== dados.imagem) {
+            URL.revokeObjectURL(existente.imagem);
+          }
+          existente.nome = dados.nome;
+          existente.descricao = dados.descricao;
+          existente.preco = dados.preco;
+          existente.categoria = dados.categoria;
+          existente.disponivel = dados.disponivel;
+          existente.imagem = dados.imagem;
+          existente.imagemBlobB64 = dados.imagemBlobB64;
+        }
+        if (salvarProdutosComVerificacao()) {
+          toast("Produto atualizado.", "ok");
+          fecharModalProduto();
+        }
+      } else {
+        dados.id = gerarId();
+        produtos.push(dados);
+        if (salvarProdutosComVerificacao()) {
+          toast("Produto adicionado.");
+          fecharModalProduto();
+        } else {
+          produtos.pop();
+        }
+      }
+      renderProdutos();
+    } catch (err) { toast("Erro ao salvar o produto.", "erro"); }
+  }
+
+  function salvarProdutosComVerificacao() {
+    return API.setProdutos(produtos);
+  }
+
+  function pedirExclusao(id) {
+    try {
+      var p = encontrarProduto(id);
+      if (!p) return;
+      idExcluir = id;
+      $("textoExcluir").textContent = "O produto \u201C" + p.nome + "\u201D será removido do cardápio. Esta ação não pode ser desfeita.";
+      $("overlayExcluir").classList.add("open");
+    } catch (e) { /* ignore */ }
+  }
+
+  function confirmarExclusao() {
+    try {
+      for (var i = 0; i < produtos.length; i++) {
+        if (produtos[i].id === idExcluir) {
+          var img = produtos[i].imagem;
+          if (img && img.indexOf("blob:") === 0) URL.revokeObjectURL(img);
+          produtos.splice(i, 1);
+          break;
+        }
+      }
+      salvarProdutos();
+      idExcluir = null;
+      $("overlayExcluir").classList.remove("open");
+      renderProdutos();
+      toast("Produto excluído.");
+    } catch (e) { toast("Erro ao excluir.", "erro"); }
+  }
+
+  function alternarDisponibilidade(id, valor) {
+    try {
+      var p = encontrarProduto(id);
+      if (!p) return;
+      p.disponivel = valor;
+      salvarProdutos();
+      renderProdutos();
+      toast(valor ? "Produto marcado como disponível." : "Produto marcado como esgotado.");
+    } catch (e) { /* ignore */ }
+  }
+
+  // ===================== SECAO LOJA =====================
+  function atualizarModoUI() {
+    var botoes = document.querySelectorAll("[data-modo]");
+    for (var i = 0; i < botoes.length; i++) {
+      botoes[i].setAttribute("aria-pressed", botoes[i].getAttribute("data-modo") === modoRascunho ? "true" : "false");
+    }
+    if (modoRascunho === "automatico") {
+      $("blocoExpira").classList.add("pm-hidden");
+    } else {
+      $("blocoExpira").classList.remove("pm-hidden");
+      if (expiraRascunho) {
+        $("inputExpira").value = expiraRascunho;
+      } else {
+        var padrao = new Date(Date.now() + 2 * 3600000);
+        $("inputExpira").value = formatarParaInputDT(padrao);
+      }
+    }
+  }
+
+  function formatarParaInputDT(d) {
+    var yyyy = d.getFullYear();
+    var mm = ("0" + (d.getMonth() + 1)).slice(-2);
+    var dd = ("0" + d.getDate()).slice(-2);
+    var hh = ("0" + d.getHours()).slice(-2);
+    var mi = ("0" + d.getMinutes()).slice(-2);
+    return yyyy + "-" + mm + "-" + dd + "T" + hh + ":" + mi;
+  }
+
+  function aplicarModoLoja() {
+    try {
+      $("expiraErro").textContent = "";
+      if (modoRascunho === "automatico") {
+        config.modo = "automatico";
+        config.manual_valor = null;
+        config.manual_expira = null;
+      } else {
+        var val = $("inputExpira").value;
+        if (!val) {
+          $("expiraErro").textContent = "Informe até quando o ajuste manual vale.";
+          return;
+        }
+        var d = new Date(val);
+        if (isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+          $("expiraErro").textContent = "A data precisa estar no futuro.";
+          return;
+        }
+        config.modo = modoRascunho;
+        config.manual_valor = modoRascunho === "manual_aberto";
+        config.manual_expira = d.toISOString();
+      }
+      if (API.setConfig(config)) {
+        toast("Modo da loja aplicado.");
+        renderStatus();
+      }
+    } catch (e) { toast("Erro ao aplicar o modo.", "erro"); }
+  }
+
+  // ===================== SECAO HORARIOS =====================
+  function renderHorarios() {
+    try {
+      var html = "";
+      for (var i = 0; i < DIAS.length; i++) {
+        var d = DIAS[i];
+        var h = horariosRascunho[d.id];
+        var disabled = h.aberto ? "" : " disabled";
+        html +=
+          '<tr data-dia="' + d.id + '">' +
+            '<th scope="row" data-label="Dia" style="font-weight:600; color:var(--roxo);">' + d.nome + '</th>' +
+            '<td data-label="Aberto"><label class="pm-toggle" style="min-height:36px;">' +
+              '<input type="checkbox" data-hora-aberto="' + d.id + '"' + (h.aberto ? " checked" : "") + ' aria-label="' + d.nome + ' aberto">' +
+              '<span class="pm-toggle-track" aria-hidden="true"></span>' +
+              '<span class="pm-hidden" aria-hidden="true"></span>' +
+            '</label></td>' +
+            '<td data-label="Abertura">' +
+              '<input type="time" data-hora-ini="' + d.id + '" value="' + escapeHtml(h.ini) + '" aria-label="Abertura de ' + d.nome + '"' + disabled + '>' +
+              (h.aberto ? '' : '<span class="pm-helper" style="margin-left:6px;">Fechado</span>') +
+            '</td>' +
+            '<td data-label="Fechamento">' +
+              '<input type="time" data-hora-fim="' + d.id + '" value="' + escapeHtml(h.fim) + '" aria-label="Fechamento de ' + d.nome + '"' + disabled + '>' +
+              '<div class="pm-error pm-hidden" data-erro-dia="' + d.id + '"></div>' +
+              '<div class="pm-warn-note pm-hidden" data-aviso-dia="' + d.id + '">Este horário atravessa a meia-noite.</div>' +
+            '</td>' +
+          '</tr>';
+      }
+      $("tbodyHorarios").innerHTML = html;
+      validarHorarios();
+      atualizarPillAlteracoes();
+    } catch (e) { /* ignore */ }
+  }
+
+  function horariosIguais(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  function validarHorarios() {
+    var erros = 0;
+    for (var i = 0; i < DIAS.length; i++) {
+      var d = DIAS[i];
+      var h = horariosRascunho[d.id];
+      var erroEl = document.querySelector('[data-erro-dia="' + d.id + '"]');
+      var avisoEl = document.querySelector('[data-aviso-dia="' + d.id + '"]');
+      if (!erroEl || !avisoEl) continue;
+      erroEl.classList.add("pm-hidden");
+      avisoEl.classList.add("pm-hidden");
+      erroEl.textContent = "";
+      if (!h.aberto) continue;
+      if (!h.ini || !h.fim) {
+        erroEl.textContent = "Preencha abertura e fechamento.";
+        erroEl.classList.remove("pm-hidden");
+        erros++;
+      } else if (h.ini === h.fim) {
+        erroEl.textContent = "Abertura e fechamento não podem ser iguais.";
+        erroEl.classList.remove("pm-hidden");
+        erros++;
+      } else if (hhmmParaMinutos(h.fim) < hhmmParaMinutos(h.ini)) {
+        avisoEl.classList.remove("pm-hidden");
+      }
+    }
+    return erros === 0;
+  }
+
+  function atualizarPillAlteracoes() {
+    var mudou = !horariosIguais(horariosRascunho, config.horarios);
+    if (mudou) $("pillAlteracoes").classList.remove("pm-hidden");
+    else $("pillAlteracoes").classList.add("pm-hidden");
+  }
+
+  function lerHorariosDoDOM() {
+    for (var i = 0; i < DIAS.length; i++) {
+      var id = DIAS[i].id;
+      var chk = document.querySelector('[data-hora-aberto="' + id + '"]');
+      var ini = document.querySelector('[data-hora-ini="' + id + '"]');
+      var fim = document.querySelector('[data-hora-fim="' + id + '"]');
+      if (!chk || !ini || !fim) continue;
+      horariosRascunho[id].aberto = chk.checked;
+      horariosRascunho[id].ini = ini.value;
+      horariosRascunho[id].fim = fim.value;
+    }
+  }
+
+  function salvarHorarios() {
+    try {
+      lerHorariosDoDOM();
+      if (!validarHorarios()) {
+        toast("Corrija os horários destacados antes de salvar.", "erro");
+        return;
+      }
+      config.horarios = JSON.parse(JSON.stringify(horariosRascunho));
+      if (API.setConfig(config)) {
+        toast("Horários salvos.");
+        renderHorarios();
+        renderStatus();
+      }
+    } catch (e) { toast("Erro ao salvar horários.", "erro"); }
+  }
+
+  // ===================== SECAO TEXTOS =====================
+  function renderContadores() {
+    var t = $("inputTituloHero").value;
+    var s = $("inputSubtituloHero").value;
+    var a = $("inputAviso").value;
+    $("contTitulo").textContent = t.length + "/60";
+    $("contSubtitulo").textContent = s.length + "/140";
+    $("contAviso").textContent = a.length + "/80";
+    $("contTitulo").className = "pm-counter" + (t.length >= 54 ? " near" : "");
+    $("contSubtitulo").className = "pm-counter" + (s.length >= 126 ? " near" : "");
+    $("contAviso").className = "pm-counter" + (a.length >= 72 ? " near" : "");
+  }
+
+  function atualizarPreviaTextos() {
+    $("prevTitulo").textContent = $("inputTituloHero").value || "Título do hero";
+    $("prevSubtitulo").textContent = $("inputSubtituloHero").value || "Subtítulo do hero";
+    var prevAviso = $("prevAviso");
+    if ($("toggleAviso").checked) {
+      prevAviso.classList.remove("pm-hidden");
+      prevAviso.textContent = $("inputAviso").value || "Texto da faixa de aviso";
+    } else {
+      prevAviso.classList.add("pm-hidden");
+    }
+    renderContadores();
+  }
+
+  function carregarTextosNoForm() {
+    $("inputTituloHero").value = textosRascunho.titulo_hero;
+    $("inputSubtituloHero").value = textosRascunho.subtitulo_hero;
+    $("toggleAviso").checked = !!textosRascunho.aviso_ativo;
+    $("inputAviso").value = textosRascunho.aviso_texto || "";
+    atualizarPreviaTextos();
+  }
+
+  function lerTextosDoForm() {
+    textosRascunho.titulo_hero = $("inputTituloHero").value.trim();
+    textosRascunho.subtitulo_hero = $("inputSubtituloHero").value.trim();
+    textosRascunho.aviso_ativo = $("toggleAviso").checked;
+    textosRascunho.aviso_texto = $("inputAviso").value.trim();
+  }
+
+  function salvarTextos() {
+    try {
+      lerTextosDoForm();
+      if (!textosRascunho.titulo_hero) {
+        toast("O título do hero não pode ficar vazio.", "erro");
+        return;
+      }
+      config.titulo_hero = textosRascunho.titulo_hero;
+      config.subtitulo_hero = textosRascunho.subtitulo_hero;
+      config.aviso_ativo = textosRascunho.aviso_ativo;
+      config.aviso_texto = textosRascunho.aviso_texto;
+      if (API.setConfig(config)) toast("Textos salvos.");
+    } catch (e) { toast("Erro ao salvar textos.", "erro"); }
+  }
+
+  function restaurarTextos() {
+    try {
+      textosRascunho = {
+        titulo_hero: CONFIG_PADRAO.titulo_hero,
+        subtitulo_hero: CONFIG_PADRAO.subtitulo_hero,
+        aviso_ativo: CONFIG_PADRAO.aviso_ativo,
+        aviso_texto: CONFIG_PADRAO.aviso_texto
+      };
+      carregarTextosNoForm();
+      toast("Textos padrão restaurados. Clique em Salvar para confirmar.");
+    } catch (e) { /* ignore */ }
+  }
+
+  // ===================== TABS =====================
+  function trocarAba(nome) {
+    try {
+      var secoes = { produtos: "secProdutos", loja: "secLoja", horarios: "secHorarios", textos: "secTextos" };
+      var abas = document.querySelectorAll(".pm-tab");
+      for (var i = 0; i < abas.length; i++) {
+        var ativa = abas[i].getAttribute("data-tab") === nome;
+        abas[i].setAttribute("aria-selected", ativa ? "true" : "false");
+      }
+      for (var k in secoes) {
+        if (Object.prototype.hasOwnProperty.call(secoes, k)) {
+          $(secoes[k]).classList.toggle("pm-hidden", k !== nome);
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  // ===================== INICIALIZACAO =====================
+  function iniciarTudo() {
+    try {
+      produtos = API.getProdutos();
+      config = API.getConfig();
+      modoRascunho = config.modo;
+      expiraRascunho = config.manual_expira ? formatarParaInputDT(new Date(config.manual_expira)) : null;
+      horariosRascunho = JSON.parse(JSON.stringify(config.horarios));
+      textosRascunho = {
+        titulo_hero: config.titulo_hero,
+        subtitulo_hero: config.subtitulo_hero,
+        aviso_ativo: config.aviso_ativo,
+        aviso_texto: config.aviso_texto
+      };
+      renderProdutos();
+      atualizarModoUI();
+      renderStatus();
+      renderHorarios();
+      carregarTextosNoForm();
+      iniciarTimerStatus();
+    } catch (e) { toast("Erro ao carregar o painel.", "erro"); }
+  }
+
+  function ligarEventos() {
+    // Login
+    $("loginForm").addEventListener("submit", function (e) { e.preventDefault(); tentarLogin(); });
+    $("btnSair").addEventListener("click", encerrarSessao);
+
+    // Abas
+    var abas = document.querySelectorAll(".pm-tab");
+    for (var i = 0; i < abas.length; i++) {
+      abas[i].addEventListener("click", function () { trocarAba(this.getAttribute("data-tab")); });
+    }
+
+    // Produtos
+    $("btnNovoProduto").addEventListener("click", function () { abrirModalProduto(null); });
+    $("btnPrimeiroProduto").addEventListener("click", function () { abrirModalProduto(null); });
+    $("btnFecharProduto").addEventListener("click", fecharModalProduto);
+    $("btnCancelarProduto").addEventListener("click", fecharModalProduto);
+    $("formProduto").addEventListener("submit", salvarFormularioProduto);
+    $("pPreco").addEventListener("input", function () { aplicarMascaraPreco(this); });
+    $("pNome").addEventListener("input", function () { if (this.value.trim()) $("errNome").classList.add("pm-hidden"); });
+
+    var catBtns = document.querySelectorAll("[data-catchoice]");
+    for (var c = 0; c < catBtns.length; c++) {
+      catBtns[c].addEventListener("click", function () {
+        catSelecionada = this.getAttribute("data-catchoice");
+        atualizarCategoriaUI();
+        atualizarPreviewImagem();
+      });
+    }
+
+    $("btnEscolherImagem").addEventListener("click", function () { $("inputImagem").click(); });
+    $("inputImagem").addEventListener("change", function () {
+      if (this.files && this.files[0]) carregarImagemDoArquivo(this.files[0]);
+      this.value = "";
+    });
+    $("btnRemoverImagem").addEventListener("click", function () {
+      if (imagemUrlPreview && imagemUrlPreview.indexOf("blob:") === 0) URL.revokeObjectURL(imagemUrlPreview);
+      imagemUrlPreview = "";
+      imagemAtual = "";
+      atualizarPreviewImagem();
+      toast("Imagem removida.");
+    });
+
+    $("overlayProduto").addEventListener("click", function (e) { if (e.target === this) fecharModalProduto(); });
+
+    $("listaProdutos").addEventListener("click", function (e) {
+      var ed = e.target.closest ? e.target.closest("[data-editar]") : null;
+      var ex = e.target.closest ? e.target.closest("[data-excluir]") : null;
+      if (ed) { var p = encontrarProduto(ed.getAttribute("data-editar")); if (p) abrirModalProduto(p); }
+      if (ex) pedirExclusao(ex.getAttribute("data-excluir"));
+    });
+    $("listaProdutos").addEventListener("change", function (e) {
+      if (e.target.getAttribute && e.target.getAttribute("data-toggle-id")) {
+        alternarDisponibilidade(e.target.getAttribute("data-toggle-id"), e.target.checked);
+      }
+    });
+
+    $("buscaProduto").addEventListener("input", function () { buscaTexto = this.value; renderProdutos(); });
+    $("ordenarProduto").addEventListener("change", function () { ordenacao = this.value; renderProdutos(); });
+    var catTabs = document.querySelectorAll(".pm-cat-tab");
+    for (var t = 0; t < catTabs.length; t++) {
+      catTabs[t].addEventListener("click", function () {
+        filtroCategoria = this.getAttribute("data-cat");
+        for (var j = 0; j < catTabs.length; j++) {
+          catTabs[j].setAttribute("aria-pressed", catTabs[j] === this ? "true" : "false");
+        }
+        renderProdutos();
+      });
+    }
+
+    $("btnCancelarExcluir").addEventListener("click", function () {
+      idExcluir = null;
+      $("overlayExcluir").classList.remove("open");
+    });
+    $("btnConfirmarExcluir").addEventListener("click", confirmarExclusao);
+    $("overlayExcluir").addEventListener("click", function (e) {
+      if (e.target === this) { idExcluir = null; this.classList.remove("open"); }
+    });
+
+    // Loja
+    var modoBtns = document.querySelectorAll("[data-modo]");
+    for (var m = 0; m < modoBtns.length; m++) {
+      modoBtns[m].addEventListener("click", function () {
+        modoRascunho = this.getAttribute("data-modo");
+        if (modoRascunho === "automatico") expiraRascunho = null;
+        atualizarModoUI();
+      });
+    }
+    $("inputExpira").addEventListener("change", function () { expiraRascunho = this.value; });
+    $("btnAplicarModo").addEventListener("click", aplicarModoLoja);
+    $("btnResetModo").addEventListener("click", function () {
+      modoRascunho = "automatico";
+      expiraRascunho = null;
+      config.modo = "automatico";
+      config.manual_valor = null;
+      config.manual_expira = null;
+      API.setConfig(config);
+      atualizarModoUI();
+      renderStatus();
+      toast("Loja voltou ao horário automático.");
+    });
+
+    // Horarios
+    $("tbodyHorarios").addEventListener("change", function (e) {
+      var t = e.target;
+      if (t.getAttribute && t.getAttribute("data-hora-aberto")) {
+        var id = t.getAttribute("data-hora-aberto");
+        lerHorariosDoDOM();
+        horariosRascunho[id].aberto = t.checked;
+        if (t.checked && !horariosRascunho[id].ini) {
+          horariosRascunho[id].ini = "08:00";
+          horariosRascunho[id].fim = "18:00";
+        }
+        renderHorarios();
+        return;
+      }
+      lerHorariosDoDOM();
+      validarHorarios();
+      atualizarPillAlteracoes();
+    });
+    $("tbodyHorarios").addEventListener("input", function () {
+      lerHorariosDoDOM();
+      validarHorarios();
+      atualizarPillAlteracoes();
+    });
+    $("btnSalvarHorarios").addEventListener("click", salvarHorarios);
+
+    // Textos
+    $("inputTituloHero").addEventListener("input", atualizarPreviaTextos);
+    $("inputSubtituloHero").addEventListener("input", atualizarPreviaTextos);
+    $("inputAviso").addEventListener("input", atualizarPreviaTextos);
+    $("toggleAviso").addEventListener("change", atualizarPreviaTextos);
+    $("btnSalvarTextos").addEventListener("click", salvarTextos);
+    $("btnRestaurarTextos").addEventListener("click", restaurarTextos);
+
+    // Modais: Escape
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        if ($("overlayExcluir").classList.contains("open")) {
+          idExcluir = null;
+          $("overlayExcluir").classList.remove("open");
+        } else if ($("overlayProduto").classList.contains("open")) {
+          fecharModalProduto();
+        }
+      }
+    });
+
+    // Login: enter já é tratado pelo form
+    $("loginSenha").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); tentarLogin(); }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    try {
+      ligarEventos();
+      if (sessaoValida()) {
+        mostrarApp();
+        iniciarTudo();
+      } else {
+        mostrarLogin();
+      }
+    } catch (e) {
+      mostrarLogin();
+    }
+  });
+})();
+</script>
+</body>
+</html>
