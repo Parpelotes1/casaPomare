@@ -1,321 +1,333 @@
-const SQL_NOW = "datetime('now')";
+// Casa Pomarê — Backend Cloudflare Worker
+// Leitura publica do catalogo; escrita somente com token de administrador.
+
+const TZ = 'America/Sao_Paulo';
+
+const CORS_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+const CORS_HEADERS = 'Content-Type, Authorization';
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin') || '*';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': CORS_METHODS,
+    'Access-Control-Allow-Headers': CORS_HEADERS,
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin'
+  };
+}
+
+function json(dados, status, request) {
+  const headers = corsHeaders(request);
+  headers['Content-Type'] = 'application/json; charset=utf-8';
+  headers['Cache-Control'] = 'no-store';
+  return new Response(JSON.stringify(dados), { status: status || 200, headers });
+}
+
+// Comparacao de tempo constante simples, para nao vazar o token por timing.
+function tokenValido(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const esperado = 'Bearer ' + (env.ADMIN_TOKEN || '');
+  if (auth.length !== esperado.length) return false;
+  let diff = 0;
+  for (let i = 0; i < auth.length; i++) {
+    diff |= auth.charCodeAt(i) ^ esperado.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+// Converte data local de Sao Paulo em partes utilizaveis.
+function agoraLocal() {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  const partes = fmt.formatToParts(new Date());
+  const mapa = {};
+  for (const p of partes) mapa[p.type] = p.value;
+  const dias = { Sun: 'dom', Mon: 'seg', Tue: 'ter', Wed: 'qua', Thu: 'qui', Fri: 'sex', Sat: 'sab' };
+  const ordem = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+  const dia = dias[mapa.weekday];
+  const idx = ordem.indexOf(dia);
+  const anterior = ordem[(idx + 6) % 7];
+  const hora = parseInt(mapa.hour, 10) % 24;
+  const minuto = parseInt(mapa.minute, 10);
+  return { dia: dia, anterior: anterior, minutos: hora * 60 + minuto, horaStr: String(hora).padStart(2, '0') + ':' + String(minuto).padStart(2, '0') };
+}
+
+function paraMinutos(hhmm) {
+  if (!hhmm) return null;
+  const p = String(hhmm).split(':');
+  if (p.length !== 2) return null;
+  return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+}
+
+// Calcula se a loja esta aberta.
+// Precedencia: ajuste manual vigente -> horario semanal.
+// Fechamento e exclusivo: no minuto exato do fechamento, ja esta fechada.
+// Horario que atravessa a meia-noite (fim < inicio) e tratado verificando
+// tambem a programacao do dia anterior.
+function calcularStatus(config) {
+  const agora = agoraLocal();
+
+  if (config.modo === 'aberto_manual' || config.modo === 'fechado_manual') {
+    const expira = config.manual_expira ? new Date(config.manual_expira).getTime() : 0;
+    if (expira && Date.now() < expira) {
+      const aberta = config.modo === 'aberto_manual';
+      return {
+        aberta: aberta,
+        motivo: aberta ? 'Ajuste manual: aberta' : 'Ajuste manual: fechada',
+        proxima_abertura: null
+      };
+    }
+  }
+
+  const horarios = config.horarios || {};
+  const dias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+  const nomes = { dom: 'domingo', seg: 'segunda', ter: 'terca', qua: 'quarta', qui: 'quinta', sex: 'sexta', sab: 'sabado' };
+
+  function intervaloDoDia(chave) {
+    const h = horarios[chave];
+    if (!h || !h.aberto) return null;
+    const ini = paraMinutos(h.ini);
+    const fim = paraMinutos(h.fim);
+    if (ini === null || fim === null) return null;
+    return { ini: ini, fim: fim, atravessa: fim <= ini };
+  }
+
+  const hoje = intervaloDoDia(agora.dia);
+  if (hoje) {
+    if (!hoje.atravessa) {
+      if (agora.minutos >= hoje.ini && agora.minutos < hoje.fim) {
+        return { aberta: true, motivo: 'Dentro do horario de funcionamento', proxima_abertura: null };
+      }
+    } else {
+      if (agora.minutos >= hoje.ini) {
+        return { aberta: true, motivo: 'Dentro do horario de funcionamento', proxima_abertura: null };
+      }
+    }
+  }
+
+  const ontem = intervaloDoDia(agora.anterior);
+  if (ontem && ontem.atravessa && agora.minutos < ontem.fim) {
+    return { aberta: true, motivo: 'Dentro do horario de funcionamento', proxima_abertura: null };
+  }
+
+  // Procura a proxima abertura nos proximos 7 dias.
+  for (let i = 0; i < 8; i++) {
+    const chave = dias[(dias.indexOf(agora.dia) + i) % 7];
+    const iv = intervaloDoDia(chave);
+    if (!iv) continue;
+    if (i === 0 && agora.minutos >= iv.ini) continue;
+    const quando = i === 0 ? 'hoje' : (i === 1 ? 'amanha' : nomes[chave]);
+    return {
+      aberta: false,
+      motivo: 'Fora do horario de funcionamento',
+      proxima_abertura: quando + ' as ' + horarios[chave].ini
+    };
+  }
+
+  return { aberta: false, motivo: 'Sem horario configurado', proxima_abertura: null };
+}
+
+async function lerConfig(env) {
+  const { results } = await env.DB.prepare('SELECT chave, valor FROM config').all();
+  const obj = {};
+  for (const linha of results) {
+    try { obj[linha.chave] = JSON.parse(linha.valor); }
+    catch (e) { obj[linha.chave] = linha.valor; }
+  }
+  return obj;
+}
+
+async function lerProdutos(env) {
+  const { results } = await env.DB.prepare(
+    'SELECT id, nome, descricao, preco, categoria, disponivel, imagem_url FROM produtos ORDER BY nome ASC'
+  ).all();
+  return results.map(function (p) {
+    return {
+      id: p.id,
+      nome: p.nome,
+      descricao: p.descricao,
+      preco: p.preco,
+      categoria: p.categoria,
+      disponivel: !!p.disponivel,
+      imagem_url: p.imagem_url
+    };
+  });
+}
 
 export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
+  async fetch(request, env, ctx) {
+    const cors = corsHeaders(request);
 
-    const cors = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods":
-        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers":
-        "Content-Type, Authorization",
-    };
-
-    const json = (data, status) => {
-      const s = status || 200;
-      return new Response(JSON.stringify(data), {
-        status: s,
-        headers: {
-          ...cors,
-          "Content-Type": "application/json;charset=UTF-8",
-        },
-      });
-    };
-
-    const erro = (msg, status) => {
-      return json({ ok: false, erro: msg }, status || 400);
-    };
-
-    const authOk = (req) => {
-      const h = req.headers.get("Authorization");
-      const esperado = "Bearer " + env.ADMIN_TOKEN;
-      return h === esperado;
-    };
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: cors });
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: cors });
     }
 
     try {
-      if (path === "/api/produtos") {
-        const sql =
-          "SELECT * FROM produtos " +
-          "WHERE ativo = 1 " +
-          "ORDER BY ordem ASC, id ASC";
-        const r = await env.DB.prepare(sql).all();
-        return json(r.results);
+      const url = new URL(request.url);
+      const caminho = url.pathname;
+      const metodo = request.method;
+
+      // ---------- PUBLICO ----------
+
+      if (caminho === '/api/public/catalogo' && metodo === 'GET') {
+        const produtos = await lerProdutos(env);
+        const config = await lerConfig(env);
+        const loja = calcularStatus(config);
+        const resp = json({ produtos: produtos, config: config, loja: loja }, 200, request);
+        resp.headers.set('Cache-Control', 'no-cache');
+        return resp;
       }
 
-      if (path === "/api/config") {
-        const sql = "SELECT chave, valor FROM config";
-        const r = await env.DB.prepare(sql).all();
-        const obj = {};
-        const linhas = r.results || [];
-        for (const linha of linhas) {
-          obj[linha.chave] = linha.valor;
-        }
-        return json(obj);
+      if (caminho.startsWith('/api/imagem/') && metodo === 'GET') {
+        const nome = decodeURIComponent(caminho.replace('/api/imagem/', ''));
+        if (!nome) return json({ erro: 'Nome ausente' }, 400, request);
+        const obj = await env.IMAGENS.get(nome);
+        if (!obj) return json({ erro: 'Imagem nao encontrada' }, 404, request);
+        const headers = {
+          'Content-Type': obj.httpMetadata ? obj.httpMetadata.contentType : 'image/jpeg',
+          'Cache-Control': 'public, max-age=31536000, immutable'
+        };
+        return new Response(obj.body, { status: 200, headers: headers });
       }
 
-      if (path === "/api/pedido" && request.method === "POST") {
-        const b = await request.json();
-        const itens = b.itens;
-        if (!Array.isArray(itens) || itens.length === 0) {
-          return erro("O pedido precisa ter pelo menos um item.");
-        }
-        let total = 0;
-        for (const i of itens) {
-          const p = Number(i.preco_centavos) || 0;
-          const q = Number(i.qtd) || 0;
-          total = total + p * q;
-        }
-        const sql =
-          "INSERT INTO pedidos (" +
-          "cliente_nome, cliente_telefone, tipo_entrega, " +
-          "endereco, observacoes, itens_json, total_centavos" +
-          ") VALUES (?, ?, ?, ?, ?, ?, ?)";
-        const r = await env.DB.prepare(sql)
-          .bind(
-            b.cliente_nome || null,
-            b.cliente_telefone || null,
-            b.tipo_entrega || "entrega",
-            b.endereco || null,
-            b.observacoes || null,
-            JSON.stringify(itens),
-            total
-          )
-          .run();
-        const id = r.meta.last_row_id;
-        return json({ ok: true, id: id, total_centavos: total });
+      // ---------- A PARTIR DAQUI, EXIGE TOKEN ----------
+
+      if (!tokenValido(request, env)) {
+        return json({ erro: 'Nao autorizado' }, 401, request);
       }
 
-      if (path === "/api/pedidos") {
-        const sql =
-          "SELECT * FROM pedidos ORDER BY id DESC LIMIT 200";
-        const r = await env.DB.prepare(sql).all();
-        return json(r.results);
+      if (caminho === '/api/produtos' && metodo === 'GET') {
+        const produtos = await lerProdutos(env);
+        return json({ produtos: produtos }, 200, request);
       }
 
-      if (path.indexOf("/api/admin/") === 0) {
-        if (!authOk(request)) {
-          return erro("Token invalido ou ausente.", 401);
-        }
+      if (caminho === '/api/produtos' && metodo === 'POST') {
+        const corpo = await request.json();
+        const nome = (corpo.nome || '').trim();
+        const preco = Number(corpo.preco);
+        if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
+        if (!(preco > 0)) return json({ erro: 'Preco deve ser maior que zero' }, 400, request);
 
-        if (path === "/api/admin/pedidos") {
-          const sql =
-            "SELECT * FROM pedidos ORDER BY id DESC LIMIT 200";
-          const r = await env.DB.prepare(sql).all();
-          return json(r.results);
-        }
+        const id = crypto.randomUUID();
+        const agora = new Date().toISOString();
+        await env.DB.prepare(
+          'INSERT INTO produtos (id, nome, descricao, preco, categoria, disponivel, imagem_url, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(
+          id,
+          nome,
+          corpo.descricao || '',
+          preco,
+          corpo.categoria || 'outros',
+          corpo.disponivel === false ? 0 : 1,
+          corpo.imagem_url || '',
+          agora,
+          agora
+        ).run();
 
-        const pedMatch = path.match(
-          /^\/api\/admin\/pedidos\/(\d+)$/
-        );
-        if (pedMatch && request.method === "PATCH") {
-          const b = await request.json();
-          const status = String(b.status || "").trim();
-          const validos = [
-            "novo",
-            "em_preparo",
-            "entregue",
-            "cancelado",
-          ];
-          if (!validos.includes(status)) {
-            return erro("Status invalido.");
-          }
-          const sql =
-            "UPDATE pedidos SET status = ? WHERE id = ?";
-          await env.DB.prepare(sql)
-            .bind(status, Number(pedMatch[1]))
-            .run();
-          return json({ ok: true });
-        }
+        return json({ id: id, nome: nome, descricao: corpo.descricao || '', preco: preco, categoria: corpo.categoria || 'outros', disponivel: corpo.disponivel !== false, imagem_url: corpo.imagem_url || '' }, 201, request);
+      }
 
-        if (path === "/api/admin/backup") {
-          const sp = "SELECT * FROM produtos ORDER BY id ASC";
-          const sc = "SELECT chave, valor FROM config";
-          const sd = "SELECT * FROM pedidos ORDER BY id ASC";
-          const prod = await env.DB.prepare(sp).all();
-          const conf = await env.DB.prepare(sc).all();
-          const ped = await env.DB.prepare(sd).all();
-          return json({
-            ok: true,
-            gerado_em: new Date().toISOString(),
-            versao: 1,
-            produtos: prod.results,
-            config: conf.results,
-            pedidos: ped.results,
-          });
-        }
+      const matchProduto = caminho.match(/^\/api\/produtos\/([^/]+)$/);
 
-        if (
-          path === "/api/admin/upload" &&
-          request.method === "POST"
-        ) {
-          const form = await request.formData();
-          const arq = form.get("imagem");
-          if (!arq || typeof arq === "string") {
-            return erro("Nenhuma imagem enviada.");
-          }
-          if (arq.type.indexOf("image/") !== 0) {
-            return erro("O arquivo precisa ser uma imagem.");
-          }
-          const cincoMB = 5 * 1024 * 1024;
-          if (arq.size > cincoMB) {
-            return erro("A imagem pode ter no maximo 5 MB.");
-          }
-          const partes = arq.name.split(".");
-          const ext = (partes.pop() || "jpg").toLowerCase();
-          const rnd = Math.random().toString(36).slice(2, 8);
-          const key = "produtos/" + Date.now() + "-" + rnd;
-          const keyFinal = key + "." + ext;
-          await env.BUCKET.put(keyFinal, arq.stream(), {
-            httpMetadata: { contentType: arq.type },
-          });
-          const base = env.R2_PUBLIC_URL.replace(/\/$/, "");
-          const urlFinal = base + "/" + keyFinal;
-          return json(
-            { ok: true, key: keyFinal, url: urlFinal },
-            201
+      if (matchProduto && metodo === 'PUT') {
+        const id = matchProduto[1];
+        const corpo = await request.json();
+        const nome = (corpo.nome || '').trim();
+        const preco = Number(corpo.preco);
+        if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
+        if (!(preco > 0)) return json({ erro: 'Preco deve ser maior que zero' }, 400, request);
+
+        const r = await env.DB.prepare(
+          'UPDATE produtos SET nome = ?, descricao = ?, preco = ?, categoria = ?, disponivel = ?, imagem_url = ?, atualizado_em = ? WHERE id = ?'
+        ).bind(
+          nome,
+          corpo.descricao || '',
+          preco,
+          corpo.categoria || 'outros',
+          corpo.disponivel === false ? 0 : 1,
+          corpo.imagem_url || '',
+          new Date().toISOString(),
+          id
+        ).run();
+
+        if (r.meta && r.meta.changes === 0) return json({ erro: 'Produto nao encontrado' }, 404, request);
+        return json({ ok: true, id: id }, 200, request);
+      }
+
+      if (matchProduto && metodo === 'PATCH') {
+        const id = matchProduto[1];
+        const corpo = await request.json();
+        const disponivel = corpo.disponivel ? 1 : 0;
+        const r = await env.DB.prepare(
+          'UPDATE produtos SET disponivel = ?, atualizado_em = ? WHERE id = ?'
+        ).bind(disponivel, new Date().toISOString(), id).run();
+        if (r.meta && r.meta.changes === 0) return json({ erro: 'Produto nao encontrado' }, 404, request);
+        return json({ ok: true, disponivel: !!disponivel }, 200, request);
+      }
+
+      if (matchProduto && metodo === 'DELETE') {
+        const id = matchProduto[1];
+        await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(id).run();
+        return new Response(null, { status: 204, headers: cors });
+      }
+
+      if (caminho === '/api/config' && metodo === 'GET') {
+        const config = await lerConfig(env);
+        return json(config, 200, request);
+      }
+
+      if (caminho === '/api/config' && metodo === 'PUT') {
+        const corpo = await request.json();
+        const agora = new Date().toISOString();
+        const stmts = [];
+        for (const chave in corpo) {
+          if (!Object.prototype.hasOwnProperty.call(corpo, chave)) continue;
+          stmts.push(
+            env.DB.prepare('INSERT OR REPLACE INTO config (chave, valor, atualizado_em) VALUES (?, ?, ?)')
+              .bind(chave, JSON.stringify(corpo[chave]), agora)
           );
         }
-
-        if (path === "/api/admin/produtos") {
-          if (request.method === "GET") {
-            const sql =
-              "SELECT * FROM produtos " +
-              "ORDER BY ordem ASC, id ASC";
-            const r = await env.DB.prepare(sql).all();
-            return json(r.results);
-          }
-          if (request.method === "POST") {
-            const b = await request.json();
-            if (!b.nome) {
-              return erro("O nome do produto e obrigatorio.");
-            }
-            const sql =
-              "INSERT INTO produtos (" +
-              "nome, descricao, preco_centavos, categoria, " +
-              "imagem_url, ativo, ordem" +
-              ") VALUES (?, ?, ?, ?, ?, ?, ?)";
-            const ativo = b.ativo === false ? 0 : 1;
-            const r = await env.DB.prepare(sql)
-              .bind(
-                b.nome,
-                b.descricao || null,
-                Number(b.preco_centavos) || 0,
-                b.categoria || "Outros",
-                b.imagem_url || null,
-                ativo,
-                Number(b.ordem) || 0
-              )
-              .run();
-            return json({ ok: true, id: r.meta.last_row_id }, 201);
-          }
-        }
-
-        const prodMatch = path.match(
-          /^\/api\/admin\/produtos\/(\d+)$/
-        );
-        if (prodMatch) {
-          const id = Number(prodMatch[1]);
-
-          if (request.method === "PUT") {
-            const b = await request.json();
-            const partes = [
-              "UPDATE produtos SET",
-              "nome = COALESCE(?, nome),",
-              "descricao = COALESCE(?, descricao),",
-              "preco_centavos = COALESCE(?, preco_centavos),",
-              "categoria = COALESCE(?, categoria),",
-              "imagem_url = COALESCE(?, imagem_url),",
-              "ativo = COALESCE(?, ativo),",
-              "ordem = COALESCE(?, ordem),",
-              "atualizado_em = " + SQL_NOW,
-              "WHERE id = ?",
-            ];
-            const sql = partes.join(" ");
-            let ativo = null;
-            if (b.ativo !== undefined) {
-              ativo = b.ativo ? 1 : 0;
-            }
-            await env.DB.prepare(sql)
-              .bind(
-                b.nome || null,
-                b.descricao || null,
-                b.preco_centavos || null,
-                b.categoria || null,
-                b.imagem_url || null,
-                ativo,
-                b.ordem || null,
-                id
-              )
-              .run();
-            return json({ ok: true });
-          }
-
-          if (request.method === "DELETE") {
-            const sql =
-              "SELECT imagem_url FROM produtos WHERE id = ?";
-            const r = await env.DB.prepare(sql)
-              .bind(id)
-              .all();
-            const linhas = r.results || [];
-            if (linhas.length > 0) {
-              const img = linhas[0].imagem_url;
-              const base = env.R2_PUBLIC_URL.replace(/\/$/, "");
-              if (img && img.indexOf(base) === 0) {
-                const key = img.slice(base.length + 1);
-                await env.BUCKET.delete(key);
-              }
-            }
-            const del = "DELETE FROM produtos WHERE id = ?";
-            await env.DB.prepare(del).bind(id).run();
-            return json({ ok: true });
-          }
-        }
-
-        if (
-          path === "/api/admin/config" &&
-          request.method === "PATCH"
-        ) {
-          const b = await request.json();
-          const entradas = Object.entries(b);
-          if (entradas.length === 0) {
-            return erro("Nenhuma configuracao enviada.");
-          }
-          const partes = [
-            "INSERT INTO config (chave, valor, atualizado_em)",
-            "VALUES (?, ?, " + SQL_NOW + ")",
-            "ON CONFLICT(chave) DO UPDATE SET",
-            "valor = excluded.valor,",
-            "atualizado_em = " + SQL_NOW,
-          ];
-          const sql = partes.join(" ");
-          for (const par of entradas) {
-            const chave = par[0];
-            const valor = par[1];
-            await env.DB.prepare(sql)
-              .bind(chave, String(valor))
-              .run();
-          }
-          return json({ ok: true });
-        }
-
-        return erro("Rota de admin nao encontrada.", 404);
+        if (stmts.length) await env.DB.batch(stmts);
+        return json({ ok: true, gravadas: stmts.length }, 200, request);
       }
 
-      if (env.ASSETS) {
-        return env.ASSETS.fetch(request);
+      if (caminho === '/api/upload' && metodo === 'POST') {
+        const form = await request.formData();
+        const arquivo = form.get('arquivo');
+        if (!arquivo || typeof arquivo === 'string') {
+          return json({ erro: 'Arquivo ausente' }, 400, request);
+        }
+        if (!arquivo.type || arquivo.type.indexOf('image/') !== 0) {
+          return json({ erro: 'Somente imagens sao aceitas' }, 400, request);
+        }
+        if (arquivo.size > 4 * 1024 * 1024) {
+          return json({ erro: 'Imagem maior que 4 MB' }, 400, request);
+        }
+
+        const ext = arquivo.type === 'image/png' ? 'png'
+          : arquivo.type === 'image/webp' ? 'webp'
+          : arquivo.type === 'image/gif' ? 'gif'
+          : 'jpg';
+        const nome = crypto.randomUUID() + '.' + ext;
+
+        await env.IMAGENS.put(nome, arquivo.stream(), {
+          httpMetadata: { contentType: arquivo.type }
+        });
+
+        return json({ url: '/api/imagem/' + nome }, 201, request);
       }
-      return new Response("Arquivo nao encontrado", {
-        status: 404,
-      });
-    } catch (e) {
-      const msg = "Erro interno: " + e.message;
-      return erro(msg, 500);
+
+      return json({ erro: 'Rota nao encontrada' }, 404, request);
+
+    } catch (err) {
+      console.error('Erro no worker:', err && err.stack ? err.stack : err);
+      return json({ erro: 'Erro interno' }, 500, request);
     }
-  },
+  }
 };
