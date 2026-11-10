@@ -1724,17 +1724,7 @@ if (d) { d.style.display = 'block'; d.textContent = 'Erro: ' + msg; }
 
 var CHAVE_CARRINHO = 'casapomare_carrinho_v7';
 var TAXA_ENTREGA = 5;
-var PRODUTOS = {
-'acai-300': { nome: 'Açaí 300ml', preco: 15, cat: 'acai', ini: 'A' },
-'acai-500': { nome: 'Açaí 500ml', preco: 22, cat: 'acai', ini: 'A' },
-'acai-700': { nome: 'Açaí 700ml', preco: 29, cat: 'acai', ini: 'A' },
-'brigadeiro': { nome: 'Brigadeiro gourmet', preco: 5, cat: 'doces', ini: 'B' },
-'bolo-pote': { nome: 'Bolo de pote', preco: 12, cat: 'doces', ini: 'B' },
-'brownie': { nome: 'Brownie', preco: 8, cat: 'doces', ini: 'B' },
-'milkshake': { nome: 'Milk shake', preco: 18, cat: 'outros', ini: 'M' },
-'salgado': { nome: 'Salgado assado', preco: 7, cat: 'outros', ini: 'S' },
-'agua': { nome: 'Água mineral', preco: 4, cat: 'outros', ini: 'Á' }
-};
+var PRODUTOS = {}
 var CORES_CAT = { acai: ['#7C4DFF', '#B14EFF'], doces: ['#FF3B81', '#F5B8C4'], outros: ['#FFB000', '#C8871F'] };
 var reduzMov = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var ehDesktop = window.innerWidth >= 768;
