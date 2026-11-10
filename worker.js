@@ -187,7 +187,7 @@ export default {
       if (caminho.startsWith('/api/imagem/') && metodo === 'GET') {
         const nome = decodeURIComponent(caminho.replace('/api/imagem/', ''));
         if (!nome) return json({ erro: 'Nome ausente' }, 400, request);
-        const obj = await env.IMAGENS.get(nome);
+        const obj = await env.BUCKET.get(nome);
         if (!obj) return json({ erro: 'Imagem nao encontrada' }, 404, request);
         const headers = {
           'Content-Type': obj.httpMetadata ? obj.httpMetadata.contentType : 'image/jpeg',
@@ -316,7 +316,7 @@ export default {
           : 'jpg';
         const nome = crypto.randomUUID() + '.' + ext;
 
-        await env.IMAGENS.put(nome, arquivo.stream(), {
+        await env.BUCKET.put(nome, arquivo.stream(), {
           httpMetadata: { contentType: arquivo.type }
         });
 
