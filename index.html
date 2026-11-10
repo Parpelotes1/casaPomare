@@ -1461,10 +1461,11 @@ fieldset.campo { border: none; padding: 0; margin: 0 0 12px; }
 <button type="button" role="tab" class="aba" aria-selected="false" data-aba="outros">Outros</button>
 </div>
 <div class="grid-cardapio" id="grid">
-
-
+<p id="catalogo-status" style="grid-column:1/-1;text-align:center;color:#6b4f5e;">Carregando cardápio...</p>
+</div>
 
 <div class="divisor" aria-hidden="true"><span class="losango"></span></div>
+
 
 <section id="sobre" class="feito-mao" aria-labelledby="tituloSobre">
 <h2 id="tituloSobre">Feito à mão</h2>
@@ -1570,7 +1571,8 @@ if (d) { d.style.display = 'block'; d.textContent = 'Erro: ' + msg; }
 
 var CHAVE_CARRINHO = 'casapomare_carrinho_v7';
 var TAXA_ENTREGA = 5;
-var PRODUTOS = []
+var PRODUTOS = {}
+
 var CORES_CAT = { acai: ['#7C4DFF', '#B14EFF'], doces: ['#FF3B81', '#F5B8C4'], outros: ['#FFB000', '#C8871F'] };
 var reduzMov = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var ehDesktop = window.innerWidth >= 768;
@@ -2249,10 +2251,100 @@ fetch(WORKER_URL + '/api/public/catalogo')
   .catch(function (e) {
     console.warn('API indisponivel: ' + e.message);
   });
+   var WORKER_URL = 'https://casapomare.polllomarcelo.workers.dev';
+
+function montarCard(p) {
+  var card = document.createElement('div');
+  card.className = 'card-produto';
+  card.setAttribute('data-categoria', p.categoria || 'outros');
+
+  var imgBox = document.createElement('div');
+  imgBox.className = 'card-imagem';
+  if (p.imagem_url) {
+    var img = document.createElement('img');
+    img.src = p.imagem_url.indexOf('http') === 0 ? p.imagem_url : WORKER_URL + p.imagem_url;
+    img.alt = p.nome;
+    img.loading = 'lazy';
+    imgBox.appendChild(img);
+  }
+
+  var corpo = document.createElement('div');
+  corpo.className = 'card-corpo';
+
+  var nome = document.createElement('h3');
+  nome.className = 'card-nome';
+  nome.textContent = p.nome;
+
+  var desc = document.createElement('p');
+  desc.className = 'card-desc';
+  desc.textContent = p.descricao || '';
+
+  var rodape = document.createElement('div');
+  rodape.className = 'card-rodape';
+
+  var preco = document.createElement('span');
+  preco.className = 'card-preco';
+  preco.textContent = 'R$ ' + Number(p.preco).toFixed(2).replace('.', ',');
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-add';
+  btn.setAttribute('data-acao', 'add');
+  btn.setAttribute('data-id', p.id);
+  btn.textContent = 'Adicionar';
+
+  rodape.appendChild(preco);
+  rodape.appendChild(btn);
+  corpo.appendChild(nome);
+  corpo.appendChild(desc);
+  corpo.appendChild(rodape);
+  card.appendChild(imgBox);
+  card.appendChild(corpo);
+
+  return card;
+}
+
+function carregarCatalogo() {
+  var grade = document.getElementById('grid');
+  var status = document.getElementById('catalogo-status');
+  if (!grade) { console.error('grid nao encontrado'); return; }
+
+  fetch(WORKER_URL + '/api/public/catalogo')
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (d) {
+      var lista = d.produtos || [];
+      if (!lista.length) {
+        if (status) status.textContent = 'Nenhum produto cadastrado ainda.';
+        return;
+      }
+      if (status) status.remove();
+      var frag = document.createDocumentFragment();
+      lista.forEach(function (p) { frag.appendChild(montarCard(p)); });
+      grade.appendChild(frag);
+      lista.forEach(function (p) {
+        PRODUTOS[p.id] = {
+          nome: p.nome,
+          preco: Number(p.preco),
+          cat: p.categoria || 'outros',
+          ini: (p.nome || '?').charAt(0).toUpperCase()
+        };
+      });
+    })
+    .catch(function (e) {
+      console.error('catalogo falhou: ' + e.message);
+      if (status) status.textContent = 'Nao foi possivel carregar o cardapio.';
+    });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', carregarCatalogo);
+} else {
+  carregarCatalogo();
+}
 </script>
-</div>
-</section>
-</main>
 </body>
 </html>
 
