@@ -2238,6 +2238,17 @@ try { atualizarStatus(); carregarConfig(); setInterval(atualizarStatus, 60000); 
 try { iniciarLogo(); } catch (e) { }
 })();
 }
+   
+var WORKER_URL = 'https://casapomare.polllomarcelo.workers.dev';
+
+fetch(WORKER_URL + '/api/public/catalogo')
+  .then(function (r) { return r.json(); })
+  .then(function (d) {
+    console.log('produtos: ' + (d.produtos ? d.produtos.length : 0));
+  })
+  .catch(function (e) {
+    console.warn('API indisponivel: ' + e.message);
+  });
 </script>
 </body>
 </html>
