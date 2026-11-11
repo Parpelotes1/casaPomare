@@ -118,39 +118,39 @@ export default {
         return json({ produtos: await lerProdutos(env) }, 200, request);
       }
 
-      if (caminho === '/api/produtos' && metodo === 'POST') {
-        const c = await request.json();
-        const nome = (c.nome || '').trim();
-        const preco = Number(c.preco);
-        if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
-        if (!(preco > 0)) return json({ erro: 'Preco invalido' }, 400, request);
-        const id = crypto.randomUUID();
-        const agora = new Date().toISOString();
-        await env.DB.prepare(
-          'INSERT INTO produtos (id, nome, descricao, preco, categoria, disponivel, imagem_url, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        ).bind(id, nome, c.descricao || '', preco, c.categoria || 'outros',
-               c.disponivel === false ? 0 : 1, c.imagem_url || '', agora, agora).run();
-        return json({ id: id }, 201, request);
-      }
-
-      const m = caminho.match(/^\/api\/produtos\/([^/]+)$/);
-
-      if (m && metodo === 'PUT') {
+         if (caminho === '/api/produtos' && metodo === 'POST') {
         const c = await request.json();
         const nome = (c.nome || '').trim();
         const preco = Number(c.preco);
         if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
         if (!(preco > 0)) return json({ erro: 'Preco invalido' }, 400, request);
         const r = await env.DB.prepare(
-          'UPDATE produtos SET nome = ?, descricao = ?, preco = ?, categoria = ?, disponivel = ?, imagem_url = ?, atualizado_em = ? WHERE id = ?'
-        ).bind(nome, c.descricao || '', preco, c.categoria || 'outros',
-               c.disponivel === false ? 0 : 1, c.imagem_url || '', new Date().toISOString(), m[1]).run();
+          'INSERT INTO produtos (nome, descricao, preco_centavos, categoria, ativo, imagem_url, ordem) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(nome, c.descricao || '', Math.round(preco * 100),
+               c.categoria || 'outros', c.disponivel === false ? 0 : 1,
+               c.imagem_url || '', 0).run();
+        return json({ id: r.meta ? r.meta.last_row_id : null }, 201, request);
+      }
+
+      const m = caminho.match(/^\/api\/produtos\/([^/]+)$/);
+
+           if (m && metodo === 'PUT') {
+        const c = await request.json();
+        const nome = (c.nome || '').trim();
+        const preco = Number(c.preco);
+        if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
+        if (!(preco > 0)) return json({ erro: 'Preco invalido' }, 400, request);
+        const r = await env.DB.prepare(
+          'UPDATE produtos SET nome = ?, descricao = ?, preco_centavos = ?, categoria = ?, ativo = ?, imagem_url = ?, atualizado_em = ? WHERE id = ?'
+        ).bind(nome, c.descricao || '', Math.round(preco * 100),
+               c.categoria || 'outros', c.disponivel === false ? 0 : 1,
+               c.imagem_url || '', new Date().toISOString(), Number(m[1])).run();
         if (r.meta && r.meta.changes === 0) return json({ erro: 'Nao encontrado' }, 404, request);
         return json({ ok: true }, 200, request);
       }
-
-      if (m && metodo === 'DELETE') {
-        await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(m[1]).run();
+      
+            if (m && metodo === 'DELETE') {
+        await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(Number(m[1])).run();
         return new Response(null, { status: 204, headers: cors(request) });
       }
 
