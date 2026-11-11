@@ -1700,95 +1700,65 @@ input, select, textarea, button { font-size: 16px; }
   }
 
   // ===================== CAMADA DE DADOS =====================
-  var API = {
-    // Pode ser substituído por fetch ao backend (GET /produtos)
-    getProdutos: function () {
-      try {
-        var raw = localStorage.getItem(CHAVE_PRODUTOS);
-        if (!raw) return [];
-        var lista = JSON.parse(raw);
-        if (!Array.isArray(lista)) return [];
-        var saida = [];
-        for (var i = 0; i < lista.length; i++) {
-          var p = lista[i];
-          if (!validarProdutoObj(p)) continue;
-          var urlImg = "";
-          if (p.imagem && typeof p.imagem === "object" && p.imagem.b64) {
-            urlImg = blobParaUrl(p.imagem.b64);
-          }
-          saida.push({
-            id: p.id,
-            nome: p.nome,
-            descricao: p.descricao || "",
-            preco: Number(p.preco) || 0,
-            categoria: CATEGORIAS[p.categoria] ? p.categoria : "outros",
-            disponivel: p.disponivel !== false,
-            imagem: urlImg,
-            imagemBlobB64: (p.imagem && p.imagem.b64) ? p.imagem.b64 : ""
-          });
-        }
-        return saida;
-      } catch (e) {
-        return [];
-      }
-    },
-    // Pode ser substituído por fetch ao backend (PUT /produtos)
-    setProdutos: function (lista) {
-      try {
-        var serial = [];
-        for (var i = 0; i < lista.length; i++) {
-          var p = lista[i];
-          serial.push({
-            id: p.id,
-            nome: p.nome,
-            descricao: p.descricao,
-            preco: p.preco,
-            categoria: p.categoria,
-            disponivel: p.disponivel,
-            imagem: p.imagemBlobB64 ? { b64: p.imagemBlobB64 } : ""
-          });
-        }
-        localStorage.setItem(CHAVE_PRODUTOS, JSON.stringify(serial));
-        return true;
-      } catch (e) {
-        if (e && (e.name === "QuotaExceededError" || e.code === 22)) {
-          toast("Armazenamento cheio. Remova algumas imagens de produtos para liberar espaço.", "erro");
-        } else {
-          toast("Não foi possível salvar os produtos.", "erro");
-        }
-        return false;
-      }
-    },
-    // Pode ser substituído por fetch ao backend (GET /config)
-    getConfig: function () {
-      try {
-        var raw = localStorage.getItem(CHAVE_CONFIG);
-        if (!raw) return JSON.parse(JSON.stringify(CONFIG_PADRAO));
-        var c = JSON.parse(raw);
-        var base = JSON.parse(JSON.stringify(CONFIG_PADRAO));
-        for (var k in c) {
-          if (Object.prototype.hasOwnProperty.call(c, k)) base[k] = c[k];
-        }
-        return base;
-      } catch (e) {
-        return JSON.parse(JSON.stringify(CONFIG_PADRAO));
-      }
-    },
-    // Pode ser substituído por fetch ao backend (PUT /config)
-    setConfig: function (c) {
-      try {
-        localStorage.setItem(CHAVE_CONFIG, JSON.stringify(c));
-        return true;
-      } catch (e) {
-        if (e && (e.name === "QuotaExceededError" || e.code === 22)) {
-          toast("Armazenamento cheio. Remova algumas imagens de produtos para liberar espaço.", "erro");
-        } else {
-          toast("Não foi possível salvar a configuração.", "erro");
-        }
-        return false;
-      }
-    }
-  };
+var API = {
+  token: sessionStorage.getItem('casapomare_token') || '',
+  base: location.origin,
+
+  login: function (senha) {
+    return fetch(this.base + '/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ senha: senha })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Credencial incorreta');
+      return r.json();
+    }).then(function (d) {
+      API.token = d.token;
+      sessionStorage.setItem('casapomare_token', d.token);
+      return d;
+    });
+  },
+
+  auth: function () {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + this.token
+    };
+  },
+
+  getProdutos: function () {
+    return fetch(this.base + '/api/produtos', { headers: { Authorization: 'Bearer ' + this.token } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { return d.produtos || []; });
+  },
+
+  criarProduto: function (p) {
+    return fetch(this.base + '/api/produtos', { method: 'POST', headers: API.auth(), body: JSON.stringify(p) })
+      .then(function (r) { return r.json(); });
+  },
+
+  atualizarProduto: function (id, p) {
+    return fetch(this.base + '/api/produtos/' + encodeURIComponent(id), {
+      method: 'PUT', headers: API.auth(), body: JSON.stringify(p)
+    }).then(function (r) { return r.json(); });
+  },
+
+  excluirProduto: function (id) {
+    return fetch(this.base + '/api/produtos/' + encodeURIComponent(id), {
+      method: 'DELETE', headers: { Authorization: 'Bearer ' + this.token }
+    });
+  },
+
+  getConfig: function () {
+    return fetch(this.base + '/api/config', { headers: { Authorization: 'Bearer ' + this.token } })
+      .then(function (r) { return r.json(); });
+  },
+
+  setConfig: function (c) {
+    return fetch(this.base + '/api/config', { method: 'PUT', headers: API.auth(), body: JSON.stringify(c) })
+      .then(function (r) { return r.json(); });
+  }
+};
 
   // Converte dataURL para Blob e guarda o base64 puro (armazenado sem dataURL cru)
   function dataUrlParaB64(dataUrl) {
