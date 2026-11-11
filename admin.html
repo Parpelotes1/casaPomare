@@ -1856,38 +1856,38 @@ var API = {
     } catch (e) { /* ignore */ }
   }
 
-  function tentarLogin() {
+    function tentarLogin() {
     try {
       if (Date.now() < bloqueadoAte) {
         $("loginErro").textContent = "Aguarde para tentar novamente.";
         return;
       }
       var senha = $("loginSenha").value;
-     API.login(senha).then(function () {
+      API.login(senha).then(function () {
         erros3 = 0;
         $("loginErro").textContent = "";
         criarSessao();
         mostrarApp();
         iniciarTudo();
-        return;
-      }
-      erros3 = erros3 + 1;
-      $("loginErro").textContent = "Senha incorreta. Tente novamente.";
-      $("loginSenha").value = "";
-      var card = $("loginCard");
-      card.classList.remove("pm-shake");
-      void card.offsetWidth;
-      card.classList.add("pm-shake");
-      if (erros3 >= 3) {
-        erros3 = 0;
-        bloqueadoAte = Date.now() + 2000;
-        $("loginBtn").disabled = true;
-        setTimeout(function () {
-          $("loginBtn").disabled = false;
-          $("loginSenha").focus();
-        }, 2000);
-      }
-      $("loginSenha").focus();
+      }).catch(function () {
+        erros3 = erros3 + 1;
+        $("loginErro").textContent = "Senha incorreta. Tente novamente.";
+        $("loginSenha").value = "";
+        var card = $("loginCard");
+        card.classList.remove("pm-shake");
+        void card.offsetWidth;
+        card.classList.add("pm-shake");
+        if (erros3 >= 3) {
+          erros3 = 0;
+          bloqueadoAte = Date.now() + 2000;
+          $("loginBtn").disabled = true;
+          setTimeout(function () {
+            $("loginBtn").disabled = false;
+            $("loginSenha").focus();
+          }, 2000);
+        }
+        $("loginSenha").focus();
+      });
     } catch (e) { /* ignore */ }
   }
 
