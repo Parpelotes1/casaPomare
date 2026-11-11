@@ -1703,10 +1703,12 @@ return { aberto: aberto, msg: msg };
 function atualizarStatus() {
 try {
 var est;
-if (CONFIG_LOJA && typeof CONFIG_LOJA.loja_aberta === 'boolean') {
-est = { aberto: CONFIG_LOJA.loja_aberta, msg: CONFIG_LOJA.loja_aberta ? 'Aberto agora' : 'Fechado no momento' };
+if (CONFIG_LOJA && CONFIG_LOJA.loja_aberta !== undefined && CONFIG_LOJA.loja_aberta !== null) {
+  var v = String(CONFIG_LOJA.loja_aberta);
+  var aberto = (v === '1' || v === 'true' || v === 'aberto');
+  est = { aberto: aberto, msg: aberto ? 'Aberto agora' : 'Fechado no momento' };
 } else {
-est = calcularAbertura(new Date());
+  est = calcularAbertura(new Date());
 }
 var bol = document.getElementById('statusBolinha');
 bol.className = 'bolinha ' + (est.aberto ? 'aberto' : 'fechado');
