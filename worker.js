@@ -53,11 +53,19 @@ async function sessaoValida(request, env) {
 
 async function lerProdutos(env) {
   const { results } = await env.DB.prepare(
-    'SELECT id, nome, descricao, preco, categoria, disponivel, imagem_url FROM produtos ORDER BY nome ASC'
+    'SELECT id, nome, descricao, preco_centavos, categoria, ativo, imagem_url FROM produtos ORDER BY ordem ASC, nome ASC'
   ).all();
   return results.map(function (p) {
-    return { id: p.id, nome: p.nome, descricao: p.descricao, preco: p.preco,
-      categoria: p.categoria, disponivel: !!p.disponivel, imagem_url: p.imagem_url };
+    return {
+      id: String(p.id),
+      nome: p.nome,
+      descricao: p.descricao || '',
+      preco: Number(p.preco_centavos) / 100,
+      categoria: String(p.categoria || 'outros').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+      disponivel: Number(p.ativo) === 1,
+      imagem_url: p.imagem_url || ''
+    };
   });
 }
 
