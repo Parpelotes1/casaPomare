@@ -2291,9 +2291,12 @@ var API = {
         toast(editandoId ? "Produto atualizado." : "Produto adicionado.");
         fecharModalProduto();
         recarregarProdutos();
-      }).catch(function () {
+           }).catch(function () {
         toast("Erro ao salvar o produto.", "erro");
       });
+    } catch (err) { toast("Erro ao salvar o produto.", "erro"); }
+  }
+
   function salvarProdutosComVerificacao() {
     return API.setProdutos(produtos);
   }
@@ -2325,7 +2328,9 @@ var API = {
         recarregarProdutos();
         toast("Produto excluído.");
       });
-    } catch (e) { toast("Erro ao excluir.", "erro"); }
+      } catch (e) { toast("Erro ao excluir.", "erro"); }
+  }
+
   function alternarDisponibilidade(id, valor) {
     try {
       API.atualizarProduto(id, { disponivel: valor }).then(function () {
