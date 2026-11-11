@@ -176,9 +176,12 @@ export default {
 
       return json({ erro: 'Rota nao encontrada' }, 404, request);
 
-    } catch (err) {
+       } catch (err) {
       console.error('Erro:', err && err.stack ? err.stack : err);
-      return json({ erro: 'Erro interno' }, 500, request);
+      return json({
+        erro: 'Erro interno',
+        detalhe: String(err && err.message ? err.message : err)
+      }, 500, request);
     }
   }
 };
