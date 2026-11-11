@@ -2125,8 +2125,9 @@ var API = {
     return null;
   }
 
-  function salvarProdutos() {
-    API.setProdutos(produtos);
+   function salvarProdutoNoServidor(dados, id) {
+    if (id) return API.atualizarProduto(id, dados);
+    return API.criarProduto(dados);
   }
 
   function abrirModalProduto(produto) {
@@ -2179,7 +2180,15 @@ var API = {
       $("btnRemoverImagem").classList.add("pm-hidden");
     }
   }
-
+ function recarregarProdutos() {
+    API.getProdutos().then(function (lista) {
+      produtos = lista || [];
+      renderProdutos();
+      renderStatus();
+    }).catch(function () {
+      toast("Erro ao atualizar a lista.", "erro");
+    });
+  }
   function carregarImagemDoArquivo(file) {
     try {
       if (["image/jpeg", "image/png", "image/webp"].indexOf(file.type) === -1) {
@@ -2266,47 +2275,25 @@ var API = {
     try {
       e.preventDefault();
       if (!validarFormularioProduto()) return;
-      var dados = {
+           var dados = {
         nome: $("pNome").value.trim(),
         descricao: $("pDescricao").value.trim(),
         preco: parsePreco($("pPreco").value),
         categoria: catSelecionada,
         disponivel: $("pDisponivel").checked,
-        imagem: imagemUrlPreview,
-        imagemBlobB64: imagemAtual
+        imagem_url: imagemAtual
       };
-      if (editandoId) {
-        var existente = encontrarProduto(editandoId);
-        if (existente) {
-          if (existente.imagem && existente.imagem.indexOf("blob:") === 0 && existente.imagem !== dados.imagem) {
-            URL.revokeObjectURL(existente.imagem);
-          }
-          existente.nome = dados.nome;
-          existente.descricao = dados.descricao;
-          existente.preco = dados.preco;
-          existente.categoria = dados.categoria;
-          existente.disponivel = dados.disponivel;
-          existente.imagem = dados.imagem;
-          existente.imagemBlobB64 = dados.imagemBlobB64;
+      salvarProdutoNoServidor(dados, editandoId).then(function (r) {
+        if (r && r.erro) {
+          toast(r.erro, "erro");
+          return;
         }
-        if (salvarProdutosComVerificacao()) {
-          toast("Produto atualizado.", "ok");
-          fecharModalProduto();
-        }
-      } else {
-        dados.id = gerarId();
-        produtos.push(dados);
-        if (salvarProdutosComVerificacao()) {
-          toast("Produto adicionado.");
-          fecharModalProduto();
-        } else {
-          produtos.pop();
-        }
-      }
-      renderProdutos();
-    } catch (err) { toast("Erro ao salvar o produto.", "erro"); }
-  }
-
+        toast(editandoId ? "Produto atualizado." : "Produto adicionado.");
+        fecharModalProduto();
+        recarregarProdutos();
+      }).catch(function () {
+        toast("Erro ao salvar o produto.", "erro");
+      });
   function salvarProdutosComVerificacao() {
     return API.setProdutos(produtos);
   }
@@ -2331,22 +2318,20 @@ var API = {
           break;
         }
       }
-      salvarProdutos();
-      idExcluir = null;
-      $("overlayExcluir").classList.remove("open");
-      renderProdutos();
-      toast("Produto excluído.");
+     
+         API.excluirProduto(idExcluir).then(function () {
+        idExcluir = null;
+        $("overlayExcluir").classList.remove("open");
+        recarregarProdutos();
+        toast("Produto excluído.");
+      });
     } catch (e) { toast("Erro ao excluir.", "erro"); }
-  }
-
   function alternarDisponibilidade(id, valor) {
     try {
-      var p = encontrarProduto(id);
-      if (!p) return;
-      p.disponivel = valor;
-      salvarProdutos();
-      renderProdutos();
-      toast(valor ? "Produto marcado como disponível." : "Produto marcado como esgotado.");
+      API.atualizarProduto(id, { disponivel: valor }).then(function () {
+        recarregarProdutos();
+        toast(valor ? "Produto marcado como disponível." : "Produto marcado como esgotado.");
+      });
     } catch (e) { /* ignore */ }
   }
 
@@ -2594,27 +2579,35 @@ var API = {
 
   // ===================== INICIALIZACAO =====================
   function iniciarTudo() {
-    try {
-      produtos = API.getProdutos();
-      config = API.getConfig();
-      modoRascunho = config.modo;
-      expiraRascunho = config.manual_expira ? formatarParaInputDT(new Date(config.manual_expira)) : null;
+    Promise.all([API.getProdutos(), API.getConfig()]).then(function (res) {
+      produtos = res[0] || [];
+      config = res[1] || JSON.parse(JSON.stringify(CONFIG_PADRAO));
+      if (!config.horarios) config.horarios = CONFIG_PADRAO.horarios;
+
+      modoRascunho = config.modo || "automatico";
+      expiraRascunho = config.manual_expira
+        ? formatarParaInputDT(new Date(config.manual_expira))
+        : null;
       horariosRascunho = JSON.parse(JSON.stringify(config.horarios));
       textosRascunho = {
-        titulo_hero: config.titulo_hero,
-        subtitulo_hero: config.subtitulo_hero,
-        aviso_ativo: config.aviso_ativo,
-        aviso_texto: config.aviso_texto
+        titulo_hero: config.titulo_hero || "",
+        subtitulo_hero: config.subtitulo_hero || "",
+        aviso_ativo: !!config.aviso_ativo,
+        aviso_texto: config.aviso_texto || ""
       };
+
       renderProdutos();
       atualizarModoUI();
       renderStatus();
       renderHorarios();
       carregarTextosNoForm();
       iniciarTimerStatus();
-    } catch (e) { toast("Erro ao carregar o painel.", "erro"); }
+    }).catch(function (e) {
+      console.error("Falha ao carregar o painel:", e);
+      toast("Erro ao carregar o painel.", "erro");
+    });
   }
-
+   
   function ligarEventos() {
     // Login
     $("loginForm").addEventListener("submit", function (e) { e.preventDefault(); tentarLogin(); });
