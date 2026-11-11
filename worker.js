@@ -99,7 +99,7 @@ export default {
       if (caminho === '/api/public/catalogo' && metodo === 'GET') {
         return json({ produtos: await lerProdutos(env), config: await lerConfig(env) }, 200, request);
       }
-
+      
       if (caminho.indexOf('/api/imagem/') === 0 && metodo === 'GET') {
         const nome = decodeURIComponent(caminho.replace('/api/imagem/', ''));
         if (!nome) return json({ erro: 'Nome ausente' }, 400, request);
@@ -114,9 +114,7 @@ export default {
       // ---------- PROTEGIDO ----------
       if (!(await sessaoValida(request, env))) return json({ erro: 'Nao autorizado' }, 401, request);
 
-      if (caminho === '/api/produtos' && metodo === 'GET') {
-        return json({ produtos: await lerProdutos(env) }, 200, request);
-      }
+    
 
          if (caminho === '/api/produtos' && metodo === 'POST') {
         const c = await request.json();
