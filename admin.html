@@ -1564,7 +1564,7 @@ input, select, textarea, button { font-size: 16px; }
   "use strict";
 
   // ===================== CONSTANTES =====================
-  var SENHA_CORRETA = "Mjar$2026";
+ 
   var CHAVE_SESSAO = "casapomare_sessao_v10";
   var CHAVE_PRODUTOS = "casapomare_produtos_v10";
   var CHAVE_CONFIG = "casapomare_config_v10";
@@ -1863,7 +1863,7 @@ var API = {
         return;
       }
       var senha = $("loginSenha").value;
-      if (senha === SENHA_CORRETA) {
+     API.login(senha).then(function () {
         erros3 = 0;
         $("loginErro").textContent = "";
         criarSessao();
