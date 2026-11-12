@@ -1789,8 +1789,11 @@ var API = {
   }
 
   // ===================== SESSAO =====================
-  function sessaoValida() {
+   function sessaoValida() {
     try {
+      var token = sessionStorage.getItem('casapomare_token');
+      if (!token) return false;
+
       var raw = localStorage.getItem(CHAVE_SESSAO);
       if (!raw) return false;
       var s = JSON.parse(raw);
@@ -1802,6 +1805,12 @@ var API = {
       return true;
     } catch (e) { return false; }
   }
+     function sincronizarToken() {
+    var t = sessionStorage.getItem('casapomare_token') || '';
+    API.token = t;
+    return t;
+  }
+   
 
   function criarSessao() {
     try {
@@ -1870,6 +1879,7 @@ var API = {
         erros3 = 0;
         $("loginErro").textContent = "";
         criarSessao();
+        sincronizarToken();
         mostrarApp();
         iniciarTudo();
       }).catch(function () {
