@@ -1701,6 +1701,9 @@ input, select, textarea, button { font-size: 16px; }
 
   // ===================== CAMADA DE DADOS =====================
 var API = {
+  base: location.protocol === "file:"
+    ? "https://casapomare.polllomarcelo.workers.dev"
+    : location.origin,
   token: sessionStorage.getItem('casapomare_token') || '',
   base: location.origin,
 
