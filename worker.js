@@ -99,7 +99,7 @@ export default {
       if (caminho === '/api/public/catalogo' && metodo === 'GET') {
         return json({ produtos: await lerProdutos(env), config: await lerConfig(env) }, 200, request);
       }
-      
+
       if (caminho.indexOf('/api/imagem/') === 0 && metodo === 'GET') {
         const nome = decodeURIComponent(caminho.replace('/api/imagem/', ''));
         if (!nome) return json({ erro: 'Nome ausente' }, 400, request);
@@ -110,17 +110,19 @@ export default {
           'Cache-Control': 'public, max-age=31536000, immutable'
         }});
       }
-      
-
 
       // ---------- PROTEGIDO ----------
       if (!(await sessaoValida(request, env))) return json({ erro: 'Nao autorizado' }, 401, request);
+
       if (caminho === '/api/produtos' && metodo === 'GET') {
         return json({ produtos: await lerProdutos(env) }, 200, request);
       }
 
+      if (caminho === '/api/config' && metodo === 'GET') {
+        return json(await lerConfig(env), 200, request);
+      }
 
-         if (caminho === '/api/produtos' && metodo === 'POST') {
+      if (caminho === '/api/produtos' && metodo === 'POST') {
         const c = await request.json();
         const nome = (c.nome || '').trim();
         const preco = Number(c.preco);
@@ -136,7 +138,7 @@ export default {
 
       const m = caminho.match(/^\/api\/produtos\/([^/]+)$/);
 
-           if (m && metodo === 'PUT') {
+      if (m && metodo === 'PUT') {
         const c = await request.json();
         const nome = (c.nome || '').trim();
         const preco = Number(c.preco);
@@ -150,13 +152,12 @@ export default {
         if (r.meta && r.meta.changes === 0) return json({ erro: 'Nao encontrado' }, 404, request);
         return json({ ok: true }, 200, request);
       }
-      
-            if (m && metodo === 'DELETE') {
+
+      if (m && metodo === 'DELETE') {
         await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(Number(m[1])).run();
         return new Response(null, { status: 204, headers: cors(request) });
       }
 
-  
       if (caminho === '/api/config' && metodo === 'PUT') {
         const c = await request.json();
         const agora = new Date().toISOString();
@@ -170,7 +171,6 @@ export default {
         return json({ ok: true }, 200, request);
       }
 
-      // Upload usando o binding BUCKET, que e o nome real da sua conta.
       if (caminho === '/api/upload' && metodo === 'POST') {
         const form = await request.formData();
         const arq = form.get('arquivo');
@@ -185,7 +185,7 @@ export default {
 
       return json({ erro: 'Rota nao encontrada' }, 404, request);
 
-       } catch (err) {
+    } catch (err) {
       console.error('Erro:', err && err.stack ? err.stack : err);
       return json({
         erro: 'Erro interno',
