@@ -110,13 +110,13 @@ export default {
           'Cache-Control': 'public, max-age=31536000, immutable'
         }});
       }
-          if (caminho === '/api/config' && metodo === 'GET') return json(await lerConfig(env), 200, request);
+      
 
 
       // ---------- PROTEGIDO ----------
       if (!(await sessaoValida(request, env))) return json({ erro: 'Nao autorizado' }, 401, request);
 
-    
+        if (caminho === '/api/config' && metodo === 'GET') return json(await lerConfig(env), 200, request);
 
          if (caminho === '/api/produtos' && metodo === 'POST') {
         const c = await request.json();
