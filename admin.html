@@ -2189,41 +2189,80 @@ var API = {
       toast("Erro ao atualizar a lista.", "erro");
     });
   }
+
   function carregarImagemDoArquivo(file) {
-    img.onload = function () {
-  try {
-    var dataUrl = comprimirImagem(img, 900, 0.75);
-    $("errImagem").classList.add("pm-hidden");
-
-    fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
-      var fd = new FormData();
-      fd.append("arquivo", blob, "produto.jpg");
-
-      return fetch(API.base + "/api/upload", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + API.token },
-        body: fd
-      });
-    }).then(function (r) { return r.json(); }).then(function (d) {
-      if (!d || !d.url) throw new Error(d && d.erro ? d.erro : "Falha no upload");
-
-      imagemAtual = d.url;
-      imagemUrlPreview = d.url.charAt(0) === "/" ? API.base + d.url : d.url;
-
-      if (typeof imagemUrlPreview === "string" && imagemUrlPreview.indexOf("blob:") === 0) {
-        URL.revokeObjectURL(imagemUrlPreview);
+    try {
+      if (["image/jpeg", "image/png", "image/webp"].indexOf(file.type) === -1) {
+        $("errImagem").textContent = "Formato nao aceito. Use JPEG, PNG ou WebP.";
+        $("errImagem").classList.remove("pm-hidden");
+        return;
       }
-      atualizarPreviewImagem();
-      toast("Imagem enviada.");
-    }).catch(function (e) {
-      $("errImagem").textContent = "Nao foi possivel enviar a imagem: " + e.message;
+      if (file.size > MAX_ORIGEM_BYTES) {
+        $("errImagem").textContent = "Arquivo acima de 8 MB. Escolha uma foto menor.";
+        $("errImagem").classList.remove("pm-hidden");
+        return;
+      }
+
+      var leitor = new FileReader();
+
+      leitor.onload = function (ev) {
+        var img = new Image();
+
+        img.onload = function () {
+          try {
+            var dataUrl = comprimirImagem(img, 900, 0.75);
+            $("errImagem").classList.add("pm-hidden");
+
+            fetch(dataUrl).then(function (r) {
+              return r.blob();
+            }).then(function (blob) {
+              var fd = new FormData();
+              fd.append("arquivo", blob, "produto.jpg");
+              return fetch(API.base + "/api/upload", {
+                method: "POST",
+                headers: { Authorization: "Bearer " + API.token },
+                body: fd
+              });
+            }).then(function (r) {
+              return r.json();
+            }).then(function (d) {
+              if (!d || !d.url) {
+                throw new Error(d && d.erro ? d.erro : "Falha no upload");
+              }
+              if (imagemUrlPreview && imagemUrlPreview.indexOf("blob:") === 0) {
+                URL.revokeObjectURL(imagemUrlPreview);
+              }
+              imagemAtual = d.url;
+              imagemUrlPreview = d.url.charAt(0) === "/" ? API.base + d.url : d.url;
+              atualizarPreviewImagem();
+              toast("Imagem enviada.");
+            }).catch(function (e) {
+              $("errImagem").textContent = "Nao foi possivel enviar a imagem: " + e.message;
+              $("errImagem").classList.remove("pm-hidden");
+            });
+          } catch (e) {
+            $("errImagem").textContent = "Nao foi possivel processar a imagem.";
+            $("errImagem").classList.remove("pm-hidden");
+          }
+        };
+
+        img.onerror = function () {
+          $("errImagem").textContent = "Nao foi possivel ler esta imagem.";
+          $("errImagem").classList.remove("pm-hidden");
+        };
+
+        img.src = ev.target.result;
+      };
+
+      leitor.readAsDataURL(file);
+    } catch (e) {
+      $("errImagem").textContent = "Nao foi possivel processar a imagem.";
       $("errImagem").classList.remove("pm-hidden");
-    });
-  } catch (e) {
-    $("errImagem").textContent = "Nao foi possivel processar a imagem.";
-    $("errImagem").classList.remove("pm-hidden");
+    }
   }
-};
+
+
+   
   function comprimirImagem(img, larguraMax, qualidade) {
     var escala = Math.min(1, larguraMax / img.width);
     var w = Math.round(img.width * escala);
@@ -2282,9 +2321,7 @@ var API = {
     } catch (err) { toast("Erro ao salvar o produto.", "erro"); }
   }
 
-  function salvarProdutosComVerificacao() {
-    return API.setProdutos(produtos);
-  }
+ 
 
   function pedirExclusao(id) {
     try {
@@ -2296,31 +2333,30 @@ var API = {
     } catch (e) { /* ignore */ }
   }
 
-  function confirmarExclusao() {
+   function confirmarExclusao() {
     try {
-      for (var i = 0; i < produtos.length; i++) {
-        if (produtos[i].id === idExcluir) {
-          var img = produtos[i].imagem;
-          if (img && img.indexOf("blob:") === 0) URL.revokeObjectURL(img);
-          produtos.splice(i, 1);
-          break;
-        }
-      }
-     
-         API.excluirProduto(idExcluir).then(function () {
+      var alvo = idExcluir;
+
+      API.excluirProduto(alvo).then(function () {
         idExcluir = null;
         $("overlayExcluir").classList.remove("open");
         recarregarProdutos();
-        toast("Produto excluído.");
+        toast("Produto excluido.");
+      }).catch(function (e) {
+        toast("Erro ao excluir: " + (e && e.message ? e.message : "desconhecido"), "erro");
       });
-      } catch (e) { toast("Erro ao excluir.", "erro"); }
+    } catch (e) {
+      toast("Erro ao excluir.", "erro");
+    }
   }
 
-  function alternarDisponibilidade(id, valor) {
+   function alternarDisponibilidade(id, valor) {
     try {
       API.atualizarProduto(id, { disponivel: valor }).then(function () {
         recarregarProdutos();
-        toast(valor ? "Produto marcado como disponível." : "Produto marcado como esgotado.");
+        toast(valor ? "Produto marcado como disponivel." : "Produto marcado como esgotado.");
+      }).catch(function () {
+        toast("Erro ao atualizar disponibilidade.", "erro");
       });
     } catch (e) { /* ignore */ }
   }
