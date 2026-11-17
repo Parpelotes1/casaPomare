@@ -1818,6 +1818,11 @@ if (acao === 'remover' && idx >= 0) carrinho.splice(idx, 1);
 if (acao === 'add') {
 var p = PRODUTOS[id];
 if (!p) return;
+if (p.disp === false) {
+anunciar('Este produto esta esgotado.');
+if (window.skipUI) window.skipUI.toast('Produto esgotado no momento.', { type: 'error' });
+return;
+}
 if (idx >= 0) carrinho[idx].qtd++;
 else carrinho.push({ id: id, nome: p.nome, preco: p.preco, qtd: 1 });
 }
@@ -1845,6 +1850,16 @@ mutar(acao, id);
 function recebimentoAtual() {
 var r = document.querySelector('input[name="recebimento"]:checked');
 return r ? r.value : 'entrega';
+}
+
+function pagamentoAtual() {
+  var r = document.querySelector('input[name="pagamento"]:checked');
+  return r ? r.value : '';
+}
+
+function marcarErroPagamento(erro) {
+  var campo = document.getElementById('campoPagamento');
+  if (campo) campo.classList.toggle('erro', !!erro);
 }
 
 /* ---------- Mensagem WhatsApp ---------- */
