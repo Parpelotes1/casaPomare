@@ -147,21 +147,32 @@ export default {
 
       const m = caminho.match(/^\/api\/produtos\/([^/]+)$/);
 
-      if (m && metodo === 'PUT') {
+          if (m && metodo === 'PUT') {
         const c = await request.json();
-        const nome = (c.nome || '').trim();
-        const preco = Number(c.preco);
+        const id = Number(m[1]);
+        const atual = await env.DB.prepare('SELECT * FROM produtos WHERE id = ?').bind(id).first();
+        if (!atual) return json({ erro: 'Nao encontrado' }, 404, request);
+
+        const tem = function (k) { return Object.prototype.hasOwnProperty.call(c, k); };
+
+        const nome = tem('nome') ? String(c.nome || '').trim() : String(atual.nome || '');
+        const preco = tem('preco') ? Number(c.preco) : Number(atual.preco_centavos) / 100;
         if (!nome) return json({ erro: 'Nome e obrigatorio' }, 400, request);
         if (!(preco > 0)) return json({ erro: 'Preco invalido' }, 400, request);
-        const r = await env.DB.prepare(
+
+        const descricao = tem('descricao') ? (c.descricao || '') : (atual.descricao || '');
+        const categoria = tem('categoria') ? (c.categoria || 'outros') : (atual.categoria || 'outros');
+        const imagemUrl = tem('imagem_url') ? (c.imagem_url || '') : (atual.imagem_url || '');
+        const ativo = tem('disponivel') ? paraAtivo(c.disponivel) : Number(atual.ativo);
+
+        await env.DB.prepare(
           'UPDATE produtos SET nome = ?, descricao = ?, preco_centavos = ?, categoria = ?, ativo = ?, imagem_url = ?, atualizado_em = ? WHERE id = ?'
-        ).bind(nome, c.descricao || '', Math.round(preco * 100),
-               c.categoria || 'outros', c.disponivel === false ? 0 : 1,
-               c.imagem_url || '', new Date().toISOString(), Number(m[1])).run();
-        if (r.meta && r.meta.changes === 0) return json({ erro: 'Nao encontrado' }, 404, request);
+        ).bind(nome, descricao, Math.round(preco * 100), categoria, ativo, imagemUrl,
+               new Date().toISOString(), id).run();
+
         return json({ ok: true }, 200, request);
       }
-
+      
       if (m && metodo === 'DELETE') {
         await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(Number(m[1])).run();
         return new Response(null, { status: 204, headers: cors(request) });
