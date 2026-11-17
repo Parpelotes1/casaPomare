@@ -1735,7 +1735,7 @@ function carregarConfig() {
       .catch(function () { clearTimeout(to); });
   } catch (e) { }
 }
-}
+
 
 /* ---------- Carrinho ---------- */
 var carrinho = [];
@@ -1811,12 +1811,24 @@ atualizarTotais();
 function mutar(acao, id) {
 var idx = -1;
 for (var i = 0; i < carrinho.length; i++) if (carrinho[i].id === id) { idx = i; break; }
-if (idx >= 0) carrinho[idx].qtd++;
-else carrinho.push({ id: id, nome: p.nome, preco: p.preco, qtd: 1 });
 if (acao === 'diminuir' && idx >= 0) { carrinho[idx].qtd--; if (carrinho[idx].qtd <= 0) carrinho.splice(idx, 1); }
 if (acao === 'remover' && idx >= 0) carrinho.splice(idx, 1);
 if (acao === 'add') {
 var p = PRODUTOS[id];
+if (!p) return;
+if (p.disp === false) {
+anunciar('Este produto esta esgotado.');
+if (window.skipUI) window.skipUI.toast('Produto esgotado no momento.', { type: 'error' });
+return;
+}
+if (idx >= 0) carrinho[idx].qtd++;
+else carrinho.push({ id: id, nome: p.nome, preco: p.preco, qtd: 1 });
+}
+salvarCarrinho();
+renderizarCarrinho();
+atualizarBadge(acao === 'add');
+}
+   
 if (!p) return;
 if (p.disp === false) {
 anunciar('Este produto esta esgotado.');
@@ -2039,6 +2051,15 @@ anunciar('Informe o endereço para entrega.');
 return;
 }
 campo.classList.remove('erro');
+   if (!pagamentoAtual()) {
+  marcarErroPagamento(true);
+  anunciar('Escolha a forma de pagamento.');
+  var campoPgto = document.getElementById('campoPagamento');
+  if (campoPgto) campoPgto.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (window.skipUI) window.skipUI.toast('Escolha a forma de pagamento.', { type: 'error' });
+  return;
+}
+marcarErroPagamento(false);
 finalizando = true;
 var url = montarMensagem();
 var btn = document.getElementById('btnFinalizar');
@@ -2224,8 +2245,9 @@ document.getElementById('btnFinalizar').addEventListener('click', finalizarPedid
 d.addEventListener('click', function (ev) {
 if (ev.target === d) d.close();
 });
-var radios = document.querySelectorAll('input[name="recebimento"]');
-for (var i = 0; i < radios.length; i++) radios[i].addEventListener('change', atualizarTotais);
+var radiosPag = document.querySelectorAll('input[name="pagamento"]');
+for (var k = 0; k < radiosPag.length; k++) {
+  radiosPag[k].addEventListener('change', function () { marcarErroPagamento(false); });
 }
 
 /* ---------- Contato sócios ---------- */
@@ -2326,9 +2348,25 @@ function montarCard(p) {
   var rodape = document.createElement('div');
   rodape.className = 'card-rodape';
 
-  var preco = document.createElement('span');
+   var preco = document.createElement('span');
   preco.className = 'card-preco';
   preco.textContent = 'R$ ' + Number(p.preco).toFixed(2).replace('.', ',');
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-add';
+
+  if (esgotado) {
+    btn.disabled = true;
+    btn.textContent = 'Esgotado';
+  } else {
+    btn.setAttribute('data-acao', 'add');
+    btn.setAttribute('data-id', p.id);
+    btn.textContent = 'Adicionar';
+  }
+
+  rodape.appendChild(preco);
+  rodape.appendChild(btn);
    
   if (esgotado) {
     btn.disabled = true;
