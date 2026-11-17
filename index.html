@@ -2246,6 +2246,19 @@ function pintarPagamento() {
   }
 }
 
+function marcarErroPagamento(erro) {
+  var campo = document.getElementById('campoPagamento');
+  if (campo) campo.classList.toggle('erro', !!erro);
+}
+
+function pintarPagamento() {
+  var labels = document.querySelectorAll('#campoPagamento .opcoes label');
+  for (var i = 0; i < labels.length; i++) {
+    var inp = labels[i].querySelector('input');
+    if (inp) labels[i].classList.toggle('selecionado', inp.checked);
+  }
+}
+
 function instalarModal() {
   var d = document.getElementById('dlgCarrinho');
   document.getElementById('btnCarrinho').addEventListener('click', abrirCarrinho);
