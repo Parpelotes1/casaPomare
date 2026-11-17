@@ -1832,7 +1832,25 @@ atualizarBadge(acao === 'add');
 if (!p) return;
 if (p.disp === false) {
 anunciar('Este produto esta esgotado.');
-if (window.skipUI) window.skipUI.toast('Produto esgotado no momento.', { type: 'error' });
+if (window.skipUI) window.skipUI.toast('Produto esgotado no momento.', {
+type: 'error' });
+return;
+}
+if (idx >= 0) carrinho[idx].qtd++;
+else carrinho.push({ id: id, nome: p.nome, preco: p.preco, qtd: 1 });
+}
+salvarCarrinho();
+renderizarCarrinho();
+atualizarBadge(acao === 'add');
+}
+   
+if (acao === 'add') {
+var p = PRODUTOS[id];
+if (!p) return;
+if (p.disp === false) {
+anunciar('Este produto esta esgotado.');
+if (window.skipUI) window.skipUI.toast('Produto esgotado no momento.', {
+type: 'error' });
 return;
 }
 if (idx >= 0) carrinho[idx].qtd++;
@@ -2247,10 +2265,19 @@ if (ev.target === d) d.close();
 });
 var radiosPag = document.querySelectorAll('input[name="pagamento"]');
 for (var k = 0; k < radiosPag.length; k++) {
-  radiosPag[k].addEventListener('change', function () { marcarErroPagamento(false); });
+  radiosPag[k].addEventListener('change', function () {
+    marcarErroPagamento(false);
+  });
+}
+
+var radios = document.querySelectorAll('input[name="recebimento"]');
+for (var i = 0; i < radios.length; i++) {
+  radios[i].addEventListener('change', atualizarTotais);
+}
 }
 
 /* ---------- Contato sócios ---------- */
+   
 function instalarContato() {
 var botoes = document.querySelectorAll('[data-contato]');
 for (var i = 0; i < botoes.length; i++) {
