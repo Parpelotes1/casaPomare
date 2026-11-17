@@ -2363,16 +2363,15 @@ var API = {
     }
   }
 
-   function alternarDisponibilidade(id, valor) {
-    try {
-      API.atualizarProduto(id, { disponivel: valor }).then(function () {
-        recarregarProdutos();
-        toast(valor ? "Produto marcado como disponivel." : "Produto marcado como esgotado.");
-      }).catch(function () {
-        toast("Erro ao atualizar disponibilidade.", "erro");
-      });
-    } catch (e) { /* ignore */ }
-  }
+function alternarDisponibilidade(id, valor) {
+  API.atualizarProduto(id, { disponivel: valor }).then(function () {
+    recarregarProdutos();
+    if (window.toast) toast(valor ? 'Produto disponivel.' : 'Produto esgotado.', { type: 'success' });
+  }).catch(function (e) {
+    if (window.toast) toast('Erro ao atualizar: ' + (e && e.message ? e.message : 'falha na gravacao'), { type: 'error' });
+    recarregarProdutos();
+  });
+}
 
   // ===================== SECAO LOJA =====================
   function atualizarModoUI() {
