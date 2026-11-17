@@ -114,6 +114,15 @@ export default {
       // ---------- PROTEGIDO ----------
       if (!(await sessaoValida(request, env))) return json({ erro: 'Nao autorizado' }, 401, request);
 
+      function paraAtivo(v) {
+  if (v === false || v === 0) return 0;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === 'false' || s === '0' || s === 'off' || s === 'nao' || s === 'não') return 0;
+  }
+  return 1;
+}
+      
       if (caminho === '/api/produtos' && metodo === 'GET') {
         return json({ produtos: await lerProdutos(env) }, 200, request);
       }
