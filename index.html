@@ -359,6 +359,60 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
   0%   { transform: translateY(10px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
+   /* forma de pagamento em cards clicaveis */
+#campoPagamento .opcoes { gap: 10px; }
+
+#campoPagamento .opcoes label {
+  position: relative;
+  flex: 1 1 calc(50% - 5px);
+  min-width: 130px;
+  padding: 13px 14px;
+  border: 1.5px solid #efcbd5;
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+#campoPagamento .opcoes label:hover {
+  border-color: #e2a9b8;
+}
+
+#campoPagamento .opcoes label.selecionado {
+  border-color: var(--accent);
+  background: #fffaf9;
+  box-shadow: 0 0 0 2px rgba(230, 59, 54, 0.14);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+#campoPagamento .opcoes label input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+#campoPagamento .opcoes label.selecionado::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3.5px #fff;
+}
+
+#campoPagamento.erro .opcoes label {
+  border-color: #f3b0bc;
+}
+
+@media (max-width: 380px) {
+  #campoPagamento .opcoes label { flex: 1 1 100%; }
+}
+   
 </style>
 <script>
 /* Skip artifact shell — fixed helpers served beside every artifact. */
@@ -1528,6 +1582,15 @@ fieldset.campo { border: none; padding: 0; margin: 0 0 12px; }
 <label><input type="radio" name="recebimento" value="retirada"> Retirada (Sem taxa)</label>
 </div>
 </fieldset>
+   <fieldset class="campo" id="campoPagamento">
+  <legend>Forma de pagamento</legend>
+  <div class="opcoes">
+    <label><input type="radio" name="pagamento" value="Cartao de credito (link)"> Cartão de crédito</label>
+    <label><input type="radio" name="pagamento" value="PIX"> PIX</label>
+    <label><input type="radio" name="pagamento" value="Dinheiro"> Dinheiro</label>
+  </div>
+  <small id="pgtoAviso">Obrigatório. Escolha como vai pagar.</small>
+</fieldset>
 <div class="campo" id="campoEndereco">
 <label for="endereco">Endereço de entrega</label>
 <input id="endereco" type="text" placeholder="Rua, número, bairro" autocomplete="street-address">
@@ -2170,23 +2233,39 @@ var r = document.getElementById('anuncio');
 if (r) r.textContent = t;
 }
 function abrirCarrinho() {
-renderizarCarrinho();
-var d = document.getElementById('dlgCarrinho');
-if (d.showModal) d.showModal();
+  renderizarCarrinho();
+  pintarPagamento();
+  var d = document.getElementById('dlgCarrinho');
+  if (d.showModal) d.showModal();
 }
-function instalarModal() {
-var d = document.getElementById('dlgCarrinho');
-document.getElementById('btnCarrinho').addEventListener('click', abrirCarrinho);
-document.getElementById('btnCarrinhoDock').addEventListener('click', abrirCarrinho);
-document.getElementById('btnFechar').addEventListener('click', function () { d.close(); });
-document.getElementById('btnFinalizar').addEventListener('click', finalizarPedido);
-d.addEventListener('click', function (ev) {
-if (ev.target === d) d.close();
-});
-var radios = document.querySelectorAll('input[name="recebimento"]');
-for (var i = 0; i < radios.length; i++) radios[i].addEventListener('change', atualizarTotais);
+function pintarPagamento() {
+  var labels = document.querySelectorAll('#campoPagamento .opcoes label');
+  for (var i = 0; i < labels.length; i++) {
+    var inp = labels[i].querySelector('input');
+    if (inp) labels[i].classList.toggle('selecionado', inp.checked);
+  }
 }
 
+function instalarModal() {
+  var d = document.getElementById('dlgCarrinho');
+  document.getElementById('btnCarrinho').addEventListener('click', abrirCarrinho);
+  document.getElementById('btnCarrinhoDock').addEventListener('click', abrirCarrinho);
+  document.getElementById('btnFechar').addEventListener('click', function () { d.close(); });
+  document.getElementById('btnFinalizar').addEventListener('click', finalizarPedido);
+  d.addEventListener('click', function (ev) {
+    if (ev.target === d) d.close();
+  });
+
+  var radiosPag = document.querySelectorAll('input[name="pagamento"]');
+  for (var k = 0; k < radiosPag.length; k++) {
+    radiosPag[k].addEventListener('change', function () {
+      marcarErroPagamento(false);
+      pintarPagamento();
+    });
+  }
+
+  pintarPagamento();
+}
 /* ---------- Contato sócios ---------- */
 function instalarContato() {
 var botoes = document.querySelectorAll('[data-contato]');
