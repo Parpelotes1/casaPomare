@@ -1,5 +1,4 @@
 // Casa Pomare - Worker
-const TZ = 'America/Sao_Paulo';
 
 function cors(request) {
   return {
@@ -51,6 +50,15 @@ async function sessaoValida(request, env) {
   return hex === p[1];
 }
 
+function paraAtivo(v) {
+  if (v === false || v === 0) return 0;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (s === 'false' || s === '0' || s === 'off' || s === 'nao' || s === 'não') return 0;
+  }
+  return 1;
+}
+
 async function lerProdutos(env) {
   const { results } = await env.DB.prepare(
     'SELECT id, nome, descricao, preco_centavos, categoria, ativo, imagem_url FROM produtos ORDER BY ordem ASC, nome ASC'
@@ -100,35 +108,27 @@ export default {
         return json({ produtos: await lerProdutos(env), config: await lerConfig(env) }, 200, request);
       }
 
+      // Config em leitura: publica, igual ao catalogo. O PUT abaixo continua protegido.
+      if (caminho === '/api/config' && metodo === 'GET') {
+        return json(await lerConfig(env), 200, request);
+      }
+
       if (caminho.indexOf('/api/imagem/') === 0 && metodo === 'GET') {
         const nome = decodeURIComponent(caminho.replace('/api/imagem/', ''));
         if (!nome) return json({ erro: 'Nome ausente' }, 400, request);
         const obj = await env.BUCKET.get(nome);
         if (!obj) return json({ erro: 'Imagem nao encontrada' }, 404, request);
-        return new Response(obj.body, { status: 200, headers: {
-          'Content-Type': obj.httpMetadata ? obj.httpMetadata.contentType : 'image/jpeg',
-          'Cache-Control': 'public, max-age=31536000, immutable'
-        }});
+        const h = cors(request);
+        h['Content-Type'] = obj.httpMetadata ? obj.httpMetadata.contentType : 'image/jpeg';
+        h['Cache-Control'] = 'public, max-age=31536000, immutable';
+        return new Response(obj.body, { status: 200, headers: h });
       }
 
       // ---------- PROTEGIDO ----------
       if (!(await sessaoValida(request, env))) return json({ erro: 'Nao autorizado' }, 401, request);
 
-      function paraAtivo(v) {
-  if (v === false || v === 0) return 0;
-  if (typeof v === 'string') {
-    const s = v.trim().toLowerCase();
-    if (s === 'false' || s === '0' || s === 'off' || s === 'nao' || s === 'não') return 0;
-  }
-  return 1;
-}
-      
       if (caminho === '/api/produtos' && metodo === 'GET') {
         return json({ produtos: await lerProdutos(env) }, 200, request);
-      }
-
-      if (caminho === '/api/config' && metodo === 'GET') {
-        return json(await lerConfig(env), 200, request);
       }
 
       if (caminho === '/api/produtos' && metodo === 'POST') {
@@ -147,7 +147,7 @@ export default {
 
       const m = caminho.match(/^\/api\/produtos\/([^/]+)$/);
 
-          if (m && metodo === 'PUT') {
+      if (m && metodo === 'PUT') {
         const c = await request.json();
         const id = Number(m[1]);
         const atual = await env.DB.prepare('SELECT * FROM produtos WHERE id = ?').bind(id).first();
@@ -172,7 +172,7 @@ export default {
 
         return json({ ok: true }, 200, request);
       }
-      
+
       if (m && metodo === 'DELETE') {
         await env.DB.prepare('DELETE FROM produtos WHERE id = ?').bind(Number(m[1])).run();
         return new Response(null, { status: 204, headers: cors(request) });
