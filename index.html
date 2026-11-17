@@ -359,6 +359,11 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
   0%   { transform: translateY(10px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
+   
+.card-produto.esgotado { opacity: 0.62; }
+.card-produto.esgotado .btn-add { background: #9b8a94; cursor: not-allowed; box-shadow: none; }
+.card-produto.esgotado .btn-add::after { display: none; }
+   
 </style>
 <script>
 /* Skip artifact shell — fixed helpers served beside every artifact. */
@@ -1528,6 +1533,15 @@ fieldset.campo { border: none; padding: 0; margin: 0 0 12px; }
 <label><input type="radio" name="recebimento" value="retirada"> Retirada (Sem taxa)</label>
 </div>
 </fieldset>
+   <fieldset class="campo" id="campoPagamento">
+  <legend>Forma de pagamento</legend>
+  <div class="opcoes">
+    <label><input type="radio" name="pagamento" value="Cartao de credito (link)"> Cartão de crédito</label>
+    <label><input type="radio" name="pagamento" value="PIX"> PIX</label>
+    <label><input type="radio" name="pagamento" value="Dinheiro"> Dinheiro</label>
+  </div>
+  <small id="pgtoAviso">Obrigatório. Escolha como vai pagar.</small>
+</fieldset>
 <div class="campo" id="campoEndereco">
 <label for="endereco">Endereço de entrega</label>
 <input id="endereco" type="text" placeholder="Rua, número, bairro" autocomplete="street-address">
@@ -1708,17 +1722,19 @@ document.getElementById('statusMsg').textContent = est.msg;
 } catch (e) { }
 }
 function carregarConfig() {
-try {
-var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 3000);
-fetch('/api/config', ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
-clearTimeout(to);
-return r.json();
-}).then(function (j) {
-CONFIG_LOJA = j;
-atualizarStatus();
-}).catch(function () { clearTimeout(to); });
-} catch (e) { }
+  try {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 3000);
+
+    fetch(WORKER_URL + '/api/public/catalogo', ctrl ? { signal: ctrl.signal } : {})
+      .then(function (r) { clearTimeout(to); return r.json(); })
+      .then(function (j) {
+        CONFIG_LOJA = j.config || null;
+        atualizarStatus();
+      })
+      .catch(function () { clearTimeout(to); });
+  } catch (e) { }
+}
 }
 
 /* ---------- Carrinho ---------- */
@@ -1845,6 +1861,15 @@ linhas.push('Total: ' + fmt(sub + (entrega ? TAXA_ENTREGA : 0)));
 linhas.push('Recebimento: ' + (entrega ? 'Entrega' : 'Retirada no local'));
 if (entrega) linhas.push('Endereço: ' + document.getElementById('endereco').value.trim());
 var obs = document.getElementById('observacoes').value.trim();
+     var pag = pagamentoAtual();
+  linhas.push('Pagamento: ' + pag);
+  if (pag === 'PIX') {
+    linhas.push('(envio a chave PIX por aqui)');
+  } else if (pag === 'Cartao de credito (link)') {
+    linhas.push('(envio o link de pagamento por aqui)');
+  } else if (pag === 'Dinheiro') {
+    linhas.push('(pagamento na entrega)');
+  }
 linhas.push('Observações: ' + (obs || 'nenhuma'));
 return 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
 }
@@ -2251,6 +2276,16 @@ function montarCard(p) {
   card.className = 'card-produto';
   card.setAttribute('data-categoria', p.categoria || 'outros');
 
+     var esgotado = p.disponivel === false;
+
+  if (esgotado) {
+    card.classList.add('esgotado');
+    var selo = document.createElement('span');
+    selo.className = 'selo';
+    selo.textContent = 'Esgotado';
+    card.appendChild(selo);
+  }
+   
   var imgBox = document.createElement('div');
   imgBox.className = 'card-imagem';
   if (p.imagem_url) {
@@ -2278,13 +2313,16 @@ function montarCard(p) {
   var preco = document.createElement('span');
   preco.className = 'card-preco';
   preco.textContent = 'R$ ' + Number(p.preco).toFixed(2).replace('.', ',');
-
-  var btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'btn-add';
-  btn.setAttribute('data-acao', 'add');
-  btn.setAttribute('data-id', p.id);
-  btn.textContent = 'Adicionar';
+   
+  if (esgotado) {
+    btn.disabled = true;
+    btn.textContent = 'Esgotado';
+    btn.removeAttribute('data-acao');
+  } else {
+    btn.setAttribute('data-acao', 'add');
+    btn.setAttribute('data-id', p.id);
+    btn.textContent = 'Adicionar';
+  }
 
   rodape.appendChild(preco);
   rodape.appendChild(btn);
@@ -2318,11 +2356,12 @@ function carregarCatalogo() {
       lista.forEach(function (p) { frag.appendChild(montarCard(p)); });
       grade.appendChild(frag);
       lista.forEach(function (p) {
-        PRODUTOS[p.id] = {
+      PRODUTOS[p.id] = {
           nome: p.nome,
           preco: Number(p.preco),
           cat: p.categoria || 'outros',
-          ini: (p.nome || '?').charAt(0).toUpperCase()
+          ini: (p.nome || '?').charAt(0).toUpperCase(),
+          disp: p.disponivel !== false
         };
       });
     })
