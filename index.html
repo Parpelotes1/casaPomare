@@ -1110,9 +1110,12 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
   window.skipShell = { fmt: fmt };
   window.skipChart = { bar: bar, line: line, donut: donut };
   window.skipUI = { table: table, kpis: kpis, badge: badge, tabs: tabs, toast: toast };
-  window.skipStore = store;
-
+    window.skipStore = store;
+  window.skipMock = createMock(20261022);
+})();
+</script>
 <style>
+
 :root {
 --accent: #E63B36;
 --accent-text: #B42C28;
