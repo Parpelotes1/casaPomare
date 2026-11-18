@@ -1135,6 +1135,85 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
 })();
 
 </script>
+   <script>
+(function () {
+  function hhmmMin(s) {
+    if (!s || s.indexOf(':') === -1) return null;
+    var p = s.split(':');
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+
+  function abertoNoHorario(agora, horarios) {
+    try {
+      if (!horarios) return false;
+      var chaves = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+      var idx = agora.getDay();
+      var min = agora.getHours() * 60 + agora.getMinutes();
+      var hoje = horarios[chaves[idx]];
+      var ontem = horarios[chaves[(idx + 6) % 7]];
+
+      if (hoje && hoje.aberto && hoje.ini && hoje.fim) {
+        var i1 = hhmmMin(hoje.ini), f1 = hhmmMin(hoje.fim);
+        if (f1 > i1 && min >= i1 && min < f1) return true;
+        if (f1 <= i1 && min >= i1) return true;
+      }
+      if (ontem && ontem.aberto && ontem.ini && ontem.fim) {
+        var i2 = hhmmMin(ontem.ini), f2 = hhmmMin(ontem.fim);
+        if (f2 <= i2 && min < f2) return true;
+      }
+      return false;
+    } catch (e) { return false; }
+  }
+
+  window.atualizarStatus = function () {
+    try {
+      var agora = new Date();
+      var aberto = null;
+      var cfg = window.CONFIG_LOJA;
+
+      if (cfg) {
+        var modo = cfg.modo;
+        var expira = cfg.manual_expira;
+
+        if (modo && modo !== 'automatico' && expira) {
+          var exp = new Date(expira);
+          if (!isNaN(exp.getTime()) && agora.getTime() < exp.getTime()) {
+            aberto = (modo === 'manual_aberto');
+          }
+        }
+
+        if (aberto === null && cfg.loja_aberta !== undefined && cfg.loja_aberta !== null) {
+          var v = String(cfg.loja_aberta).trim().toLowerCase();
+          if (v === '1' || v === 'true' || v === 'aberto' || v === 'aberta' || v === 'sim') aberto = true;
+          else if (v === '0' || v === 'false' || v === 'fechado' || v === 'fechada' || v === 'nao' || v === 'não') aberto = false;
+        }
+
+        if (aberto === null && cfg.horarios) {
+          aberto = abertoNoHorario(agora, cfg.horarios);
+        }
+      }
+
+      if (aberto === null && typeof window.calcularAbertura === 'function') {
+        aberto = window.calcularAbertura(agora).aberto;
+      }
+      if (aberto === null) aberto = false;
+
+      var bol = document.getElementById('statusBolinha');
+      if (bol) bol.className = 'bolinha ' + (aberto ? 'aberto' : 'fechado');
+
+      var txt = document.getElementById('statusTexto');
+      if (txt) txt.textContent = aberto ? 'Aberto' : 'Fechado';
+
+      var msg = document.getElementById('statusMsg');
+      if (msg) msg.textContent = aberto ? 'Aberto agora' : 'Fechado no momento';
+    } catch (e) { }
+  };
+
+  window.atualizarStatus();
+
+  setInterval(function () { window.atualizarStatus(); }, 60000);
+})();
+</script>
 <style>
 :root {
 --accent: #E63B36;
