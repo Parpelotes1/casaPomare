@@ -1826,14 +1826,25 @@ b.classList.add('bounce3d');
 }
 }
 function atualizarTotais() {
-var sub = subtotal();
-var entrega = recebimentoAtual() === 'entrega';
-var taxa = entrega && carrinho.length ? TAXA_ENTREGA : 0;
-document.getElementById('resSubtotal').textContent = fmt(sub);
-document.getElementById('resTaxa').textContent = entrega ? fmt(TAXA_ENTREGA) : 'Sem taxa';
-document.getElementById('resTaxaLabel').textContent = entrega ? 'Taxa de entrega' : 'Retirada';
-document.getElementById('resTotal').textContent = fmt(sub + taxa);
-document.getElementById('campoEndereco').style.display = entrega ? '' : 'none';
+  var sub = subtotal();
+  var entrega = recebimentoAtual() === 'entrega';
+  var taxa = entrega && carrinho.length ? TAXA_ENTREGA : 0;
+  var el;
+
+  el = document.getElementById('resSubtotal');
+  if (el) el.textContent = fmt(sub);
+
+  el = document.getElementById('resTaxa');
+  if (el) el.textContent = entrega ? fmt(TAXA_ENTREGA) : 'Sem taxa';
+
+  el = document.getElementById('resTaxaLabel');
+  if (el) el.textContent = entrega ? 'Taxa de entrega' : 'Retirada';
+
+  el = document.getElementById('resTotal');
+  if (el) el.textContent = fmt(sub + taxa);
+
+  el = document.getElementById('campoEndereco');
+  if (el) el.style.display = entrega ? '' : 'none';
 }
 function renderizarCarrinho() {
 var lista = document.getElementById('listaCarrinho');
@@ -1895,30 +1906,35 @@ return r ? r.value : 'entrega';
 
 /* ---------- Mensagem WhatsApp ---------- */
 function montarMensagem() {
-var linhas = ['Olá, Casa Pomarê! Quero fazer um pedido:'];
-for (var i = 0; i < carrinho.length; i++) {
-var it = carrinho[i];
-linhas.push('• ' + it.qtd + 'x ' + it.nome + ' - ' + fmt(it.preco * it.qtd));
-}
-   
-var sub = subtotal();
-var entrega = recebimentoAtual() === 'entrega';
-linhas.push('Subtotal: ' + fmt(sub));
-if (entrega) linhas.push('Taxa de entrega: ' + fmt(TAXA_ENTREGA));
-linhas.push('Total: ' + fmt(sub + (entrega ? TAXA_ENTREGA : 0)));
-linhas.push('Recebimento: ' + (entrega ? 'Entrega' : 'Retirada no local'));
-if (entrega) linhas.push('Endereço: ' + document.getElementById('endereco').value.trim());
-var obs = document.getElementById('observacoes').value.trim();
-function pagamentoAtual() {
-  var r = document.querySelector('input[name="pagamento"]:checked');
-  return r ? r.value : '';
-}
-   var pag = pagamentoAtual();
-linhas.push('Pagamento: ' + (pag || 'nao informado'));
-linhas.push('Observações: ' + (obs || 'nenhuma'));
-return 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
-}
+  var linhas = ['Olá, Casa Pomarê! Quero fazer um pedido:'];
 
+  for (var i = 0; i < carrinho.length; i++) {
+    var it = carrinho[i];
+    linhas.push('• ' + it.qtd + 'x ' + it.nome + ' - ' + fmt(it.preco * it.qtd));
+  }
+
+  var sub = subtotal();
+  var entrega = recebimentoAtual() === 'entrega';
+
+  linhas.push('Subtotal: ' + fmt(sub));
+  if (entrega) linhas.push('Taxa de entrega: ' + fmt(TAXA_ENTREGA));
+  linhas.push('Total: ' + fmt(sub + (entrega ? TAXA_ENTREGA : 0)));
+  linhas.push('Recebimento: ' + (entrega ? 'Entrega' : 'Retirada no local'));
+
+  if (entrega) {
+    var elEnd = document.getElementById('endereco');
+    linhas.push('Endereço: ' + (elEnd ? elEnd.value.trim() : ''));
+  }
+
+  var pag = pagamentoAtual();
+  linhas.push('Pagamento: ' + (pag || 'nao informado'));
+
+  var elObs = document.getElementById('observacoes');
+  var obs = elObs ? elObs.value.trim() : '';
+  linhas.push('Observações: ' + (obs || 'nenhuma'));
+
+  return 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
+}
 /* ---------- Canvas partículas ---------- */
 var canvas = null, ctx = null, particulas = [], ondas = [], rafCanvas = 0;
 function iniciarCanvas() {
@@ -2242,9 +2258,11 @@ if (r) r.textContent = t;
 function abrirCarrinho() {
   renderizarCarrinho();
   pintarPagamento();
+  atualizarTotais();
   var d = document.getElementById('dlgCarrinho');
-  if (d.showModal) d.showModal();
+  if (d && d.showModal) d.showModal();
 }
+
 function pintarPagamento() {
   var labels = document.querySelectorAll('#campoPagamento .opcoes label');
   for (var i = 0; i < labels.length; i++) {
@@ -2258,27 +2276,33 @@ function marcarErroPagamento(erro) {
   if (campo) campo.classList.toggle('erro', !!erro);
 }
 
-function pintarPagamento() {
-  var labels = document.querySelectorAll('#campoPagamento .opcoes label');
-  for (var i = 0; i < labels.length; i++) {
-    var inp = labels[i].querySelector('input');
-    if (inp) labels[i].classList.toggle('selecionado', inp.checked);
-  }
+function pagamentoAtual() {
+  var r = document.querySelector('input[name="pagamento"]:checked');
+  if (r && r.value) return r.value;
+  var alt = document.querySelector('#campoPagamento input[type="radio"]:checked');
+  return alt && alt.value ? alt.value : '';
 }
 
 function instalarModal() {
   var d = document.getElementById('dlgCarrinho');
+  if (!d) return;
 
-  document.getElementById('btnCarrinho').addEventListener('click', abrirCarrinho);
-  document.getElementById('btnCarrinhoDock').addEventListener('click', abrirCarrinho);
-  document.getElementById('btnFechar').addEventListener('click', function () { d.close(); });
-  document.getElementById('btnFinalizar').addEventListener('click', finalizarPedido);
+  var btnCarrinho = document.getElementById('btnCarrinho');
+  if (btnCarrinho) btnCarrinho.addEventListener('click', abrirCarrinho);
+
+  var btnDock = document.getElementById('btnCarrinhoDock');
+  if (btnDock) btnDock.addEventListener('click', abrirCarrinho);
+
+  var btnFechar = document.getElementById('btnFechar');
+  if (btnFechar) btnFechar.addEventListener('click', function () { d.close(); });
+
+  var btnFinalizar = document.getElementById('btnFinalizar');
+  if (btnFinalizar) btnFinalizar.addEventListener('click', finalizarPedido);
 
   d.addEventListener('click', function (ev) {
     if (ev.target === d) d.close();
   });
 
-  // --- forma de pagamento: limpa o erro e pinta o card escolhido
   var radiosPag = document.querySelectorAll('input[name="pagamento"]');
   for (var k = 0; k < radiosPag.length; k++) {
     radiosPag[k].addEventListener('change', function () {
@@ -2287,15 +2311,15 @@ function instalarModal() {
     });
   }
 
-  // --- forma de recebimento: recalcula totais e mostra/esconde o endereco
   var radiosRec = document.querySelectorAll('input[name="recebimento"]');
-  for (var i = 0; i < radiosRec.length; i++) {
-    radiosRec[i].addEventListener('change', atualizarTotais);
+  for (var r = 0; r < radiosRec.length; r++) {
+    radiosRec[r].addEventListener('change', atualizarTotais);
   }
 
   pintarPagamento();
   atualizarTotais();
 }
+
 /* ---------- Contato sócios ---------- */
 function instalarContato() {
 var botoes = document.querySelectorAll('[data-contato]');
