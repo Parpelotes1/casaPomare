@@ -1771,17 +1771,24 @@ document.getElementById('statusMsg').textContent = est.msg;
 } catch (e) { }
 }
 function carregarConfig() {
-try {
-var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 3000);
-fetch('/api/config', ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
-clearTimeout(to);
-return r.json();
-}).then(function (j) {
-CONFIG_LOJA = j;
-atualizarStatus();
-}).catch(function () { clearTimeout(to); });
-} catch (e) { }
+  try {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
+
+    fetch(WORKER_URL + '/api/public/catalogo', ctrl ? { signal: ctrl.signal } : {})
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (j) {
+        if (j && j.config) {
+          CONFIG_LOJA = j.config;
+          atualizarStatus();
+        }
+      })
+      .catch(function () { clearTimeout(to); });
+  } catch (e) { }
 }
 
 /* ---------- Carrinho ---------- */
@@ -2442,6 +2449,10 @@ function carregarCatalogo() {
     })
     .then(function (d) {
       var lista = d.produtos || [];
+             if (d.config) {
+        CONFIG_LOJA = d.config;
+        atualizarStatus();
+      }
       if (!lista.length) {
         if (status) status.textContent = 'Nenhum produto cadastrado ainda.';
         return;
