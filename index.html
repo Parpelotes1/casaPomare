@@ -2376,27 +2376,28 @@ window.scrollTo({ top: 0, behavior: reduzMov ? 'auto' : 'smooth' });
 }
 
 /* ---------- Inicialização ---------- */
-   function carregarConfig() {
+function carregarConfig() {
   try {
+    var url = 'https://casapomare.polllomarcelo.workers.dev/api/public/catalogo?t=' + Date.now();
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
 
-    fetch(WORKER_URL + '/api/public/catalogo?t=' + Date.now(), {
-      cache: 'no-store',
-      signal: ctrl ? ctrl.signal : undefined
-    })
+    fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) {
         clearTimeout(to);
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
       .then(function (j) {
-        if (j && j.config) {
-          CONFIG_LOJA = j.config;
-          atualizarStatus();
+        if (!j || !j.config) {
+          console.warn('Resposta sem config:', j);
+          return;
         }
+        CONFIG_LOJA = j.config;
+        console.log('config recebida:', j.config);
+        atualizarStatus();
       })
-      .catch(function () { clearTimeout(to); });
+      .catch(function (e) { console.warn('carregarConfig falhou:', e.message); });
   } catch (e) { }
 }
 document.addEventListener('DOMContentLoaded', function () {
