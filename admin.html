@@ -2401,35 +2401,43 @@ function alternarDisponibilidade(id, valor) {
     return yyyy + "-" + mm + "-" + dd + "T" + hh + ":" + mi;
   }
 
-  function aplicarModoLoja() {
-    try {
-      $("expiraErro").textContent = "";
-      if (modoRascunho === "automatico") {
-        config.modo = "automatico";
-        config.manual_valor = null;
-        config.manual_expira = null;
-      } else {
-        var val = $("inputExpira").value;
-        if (!val) {
-          $("expiraErro").textContent = "Informe até quando o ajuste manual vale.";
-          return;
-        }
-        var d = new Date(val);
-        if (isNaN(d.getTime()) || d.getTime() <= Date.now()) {
-          $("expiraErro").textContent = "A data precisa estar no futuro.";
-          return;
-        }
-        config.modo = modoRascunho;
-        config.manual_valor = modoRascunho === "manual_aberto";
-        config.manual_expira = d.toISOString();
+function aplicarModoLoja() {
+  try {
+    $("expiraErro").textContent = "";
+    if (modoRascunho === "automatico") {
+      config.modo = "automatico";
+      config.manual_valor = null;
+      config.manual_expira = null;
+    } else {
+      var val = $("inputExpira").value;
+      if (!val) {
+        $("expiraErro").textContent = "Informe até quando o ajuste manual vale.";
+        return;
       }
-      if (API.setConfig(config)) {
-        toast("Modo da loja aplicado.");
-        renderStatus();
+      var d = new Date(val);
+      if (isNaN(d.getTime()) || d.getTime() <= Date.now()) {
+        $("expiraErro").textContent = "A data precisa estar no futuro.";
+        return;
       }
-    } catch (e) { toast("Erro ao aplicar o modo.", "erro"); }
-  }
+      config.modo = modoRascunho;
+      config.manual_valor = modoRascunho === "manual_aberto";
+      config.manual_expira = d.toISOString();
+    }
 
+    sincronizarToken();
+
+    API.setConfig(config).then(function (r) {
+      if (r && r.erro) {
+        toast("Não salvou: " + r.erro, "erro");
+        return;
+      }
+      toast("Modo da loja aplicado.");
+      renderStatus();
+    }).catch(function (e) {
+      toast("Falha ao salvar: " + (e && e.message ? e.message : "erro de rede"), "erro");
+    });
+  } catch (e) { toast("Erro ao aplicar o modo.", "erro"); }
+}
   // ===================== SECAO HORARIOS =====================
   function renderHorarios() {
     try {
