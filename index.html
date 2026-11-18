@@ -1900,6 +1900,7 @@ for (var i = 0; i < carrinho.length; i++) {
 var it = carrinho[i];
 linhas.push('• ' + it.qtd + 'x ' + it.nome + ' - ' + fmt(it.preco * it.qtd));
 }
+   
 var sub = subtotal();
 var entrega = recebimentoAtual() === 'entrega';
 linhas.push('Subtotal: ' + fmt(sub));
@@ -1908,6 +1909,12 @@ linhas.push('Total: ' + fmt(sub + (entrega ? TAXA_ENTREGA : 0)));
 linhas.push('Recebimento: ' + (entrega ? 'Entrega' : 'Retirada no local'));
 if (entrega) linhas.push('Endereço: ' + document.getElementById('endereco').value.trim());
 var obs = document.getElementById('observacoes').value.trim();
+function pagamentoAtual() {
+  var r = document.querySelector('input[name="pagamento"]:checked');
+  return r ? r.value : '';
+}
+   var pag = pagamentoAtual();
+linhas.push('Pagamento: ' + (pag || 'nao informado'));
 linhas.push('Observações: ' + (obs || 'nenhuma'));
 return 'https://wa.me/5516992874030?text=' + encodeURIComponent(linhas.join('\n'));
 }
@@ -2261,14 +2268,17 @@ function pintarPagamento() {
 
 function instalarModal() {
   var d = document.getElementById('dlgCarrinho');
+
   document.getElementById('btnCarrinho').addEventListener('click', abrirCarrinho);
   document.getElementById('btnCarrinhoDock').addEventListener('click', abrirCarrinho);
   document.getElementById('btnFechar').addEventListener('click', function () { d.close(); });
   document.getElementById('btnFinalizar').addEventListener('click', finalizarPedido);
+
   d.addEventListener('click', function (ev) {
     if (ev.target === d) d.close();
   });
 
+  // --- forma de pagamento: limpa o erro e pinta o card escolhido
   var radiosPag = document.querySelectorAll('input[name="pagamento"]');
   for (var k = 0; k < radiosPag.length; k++) {
     radiosPag[k].addEventListener('change', function () {
@@ -2277,7 +2287,14 @@ function instalarModal() {
     });
   }
 
+  // --- forma de recebimento: recalcula totais e mostra/esconde o endereco
+  var radiosRec = document.querySelectorAll('input[name="recebimento"]');
+  for (var i = 0; i < radiosRec.length; i++) {
+    radiosRec[i].addEventListener('change', atualizarTotais);
+  }
+
   pintarPagamento();
+  atualizarTotais();
 }
 /* ---------- Contato sócios ---------- */
 function instalarContato() {
