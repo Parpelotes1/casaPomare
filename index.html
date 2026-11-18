@@ -1111,109 +1111,7 @@ table.shell-table td.skip-table-empty { color: var(--text-muted); text-align: ce
   window.skipChart = { bar: bar, line: line, donut: donut };
   window.skipUI = { table: table, kpis: kpis, badge: badge, tabs: tabs, toast: toast };
   window.skipStore = store;
-  window.skipMock = createMock(20261022);
-})();
-   (function () {
-  var URL_CFG = 'https://casapomare.polllomarcelo.workers.dev/api/public/catalogo';
 
-  function puxarConfig() {
-    fetch(URL_CFG + '?t=' + Date.now(), { cache: 'no-store' })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (d) {
-        if (!d || !d.config) return;
-        CONFIG_LOJA = d.config;
-        if (typeof atualizarStatus === 'function') atualizarStatus();
-      })
-      .catch(function (e) { console.warn('config falhou:', e.message); });
-  }
-
-  puxarConfig();
-  setInterval(puxarConfig, 30000);
-})();
-
-</script>
-   <script>
-(function () {
-  function hhmmMin(s) {
-    if (!s || s.indexOf(':') === -1) return null;
-    var p = s.split(':');
-    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
-  }
-
-  function abertoNoHorario(agora, horarios) {
-    try {
-      if (!horarios) return false;
-      var chaves = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-      var idx = agora.getDay();
-      var min = agora.getHours() * 60 + agora.getMinutes();
-      var hoje = horarios[chaves[idx]];
-      var ontem = horarios[chaves[(idx + 6) % 7]];
-
-      if (hoje && hoje.aberto && hoje.ini && hoje.fim) {
-        var i1 = hhmmMin(hoje.ini), f1 = hhmmMin(hoje.fim);
-        if (f1 > i1 && min >= i1 && min < f1) return true;
-        if (f1 <= i1 && min >= i1) return true;
-      }
-      if (ontem && ontem.aberto && ontem.ini && ontem.fim) {
-        var i2 = hhmmMin(ontem.ini), f2 = hhmmMin(ontem.fim);
-        if (f2 <= i2 && min < f2) return true;
-      }
-      return false;
-    } catch (e) { return false; }
-  }
-
-  window.atualizarStatus = function () {
-    try {
-      var agora = new Date();
-      var aberto = null;
-      var cfg = window.CONFIG_LOJA;
-
-      if (cfg) {
-        var modo = cfg.modo;
-        var expira = cfg.manual_expira;
-
-        if (modo && modo !== 'automatico' && expira) {
-          var exp = new Date(expira);
-          if (!isNaN(exp.getTime()) && agora.getTime() < exp.getTime()) {
-            aberto = (modo === 'manual_aberto');
-          }
-        }
-
-        if (aberto === null && cfg.loja_aberta !== undefined && cfg.loja_aberta !== null) {
-          var v = String(cfg.loja_aberta).trim().toLowerCase();
-          if (v === '1' || v === 'true' || v === 'aberto' || v === 'aberta' || v === 'sim') aberto = true;
-          else if (v === '0' || v === 'false' || v === 'fechado' || v === 'fechada' || v === 'nao' || v === 'não') aberto = false;
-        }
-
-        if (aberto === null && cfg.horarios) {
-          aberto = abertoNoHorario(agora, cfg.horarios);
-        }
-      }
-
-      if (aberto === null && typeof window.calcularAbertura === 'function') {
-        aberto = window.calcularAbertura(agora).aberto;
-      }
-      if (aberto === null) aberto = false;
-
-      var bol = document.getElementById('statusBolinha');
-      if (bol) bol.className = 'bolinha ' + (aberto ? 'aberto' : 'fechado');
-
-      var txt = document.getElementById('statusTexto');
-      if (txt) txt.textContent = aberto ? 'Aberto' : 'Fechado';
-
-      var msg = document.getElementById('statusMsg');
-      if (msg) msg.textContent = aberto ? 'Aberto agora' : 'Fechado no momento';
-    } catch (e) { }
-  };
-
-  window.atualizarStatus();
-
-  setInterval(function () { window.atualizarStatus(); }, 60000);
-})();
-</script>
 <style>
 :root {
 --accent: #E63B36;
@@ -1853,43 +1751,75 @@ if (d === 6) msg = 'Abrimos segunda às 8h';
 if (d === 0) msg = 'Abrimos segunda às 8h';
 return { aberto: aberto, msg: msg };
 }
-function atualizarStatus() {
-try {
-var est;
-if (CONFIG_LOJA && CONFIG_LOJA.loja_aberta !== undefined && CONFIG_LOJA.loja_aberta !== null) {
-  var v = String(CONFIG_LOJA.loja_aberta);
-  var aberto = (v === '1' || v === 'true' || v === 'aberto');
-  est = { aberto: aberto, msg: aberto ? 'Aberto agora' : 'Fechado no momento' };
-} else {
-  est = calcularAbertura(new Date());
+function hhmmMin(s) {
+  if (!s || s.indexOf(':') === -1) return null;
+  var p = s.split(':');
+  return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
 }
-var bol = document.getElementById('statusBolinha');
-bol.className = 'bolinha ' + (est.aberto ? 'aberto' : 'fechado');
-document.getElementById('statusTexto').textContent = est.aberto ? 'Aberto' : 'Fechado';
-document.getElementById('statusMsg').textContent = est.msg;
-} catch (e) { }
-}
-function carregarConfig() {
-  try {
-    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
 
-    fetch(WORKER_URL + '/api/public/catalogo', ctrl ? { signal: ctrl.signal } : {})
-      .then(function (r) {
-        clearTimeout(to);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (j) {
-        if (j && j.config) {
-          CONFIG_LOJA = j.config;
-          atualizarStatus();
+function abertoNoHorario(agora, horarios) {
+  try {
+    if (!horarios) return false;
+    var chaves = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    var idx = agora.getDay();
+    var min = agora.getHours() * 60 + agora.getMinutes();
+    var hoje = horarios[chaves[idx]];
+    var ontem = horarios[chaves[(idx + 6) % 7]];
+
+    if (hoje && hoje.aberto && hoje.ini && hoje.fim) {
+      var i1 = hhmmMin(hoje.ini), f1 = hhmmMin(hoje.fim);
+      if (f1 > i1 && min >= i1 && min < f1) return true;
+      if (f1 <= i1 && min >= i1) return true;
+    }
+    if (ontem && ontem.aberto && ontem.ini && ontem.fim) {
+      var i2 = hhmmMin(ontem.ini), f2 = hhmmMin(ontem.fim);
+      if (f2 <= i2 && min < f2) return true;
+    }
+    return false;
+  } catch (e) { return false; }
+}
+
+function atualizarStatus() {
+  try {
+    var agora = new Date();
+    var aberto = null;
+
+    if (CONFIG_LOJA) {
+      var modo = CONFIG_LOJA.modo;
+      var expira = CONFIG_LOJA.manual_expira;
+
+      if (modo && modo !== 'automatico' && expira) {
+        var exp = new Date(expira);
+        if (!isNaN(exp.getTime()) && agora.getTime() < exp.getTime()) {
+          aberto = (modo === 'manual_aberto');
         }
-      })
-      .catch(function () { clearTimeout(to); });
+      }
+
+      if (aberto === null && CONFIG_LOJA.loja_aberta !== undefined && CONFIG_LOJA.loja_aberta !== null) {
+        var v = String(CONFIG_LOJA.loja_aberta).trim().toLowerCase();
+        if (v === '1' || v === 'true' || v === 'aberto' || v === 'aberta' || v === 'sim') aberto = true;
+        else if (v === '0' || v === 'false' || v === 'fechado' || v === 'fechada' || v === 'nao' || v === 'não') aberto = false;
+      }
+
+      if (aberto === null && CONFIG_LOJA.horarios) {
+        aberto = abertoNoHorario(agora, CONFIG_LOJA.horarios);
+      }
+    }
+
+    if (aberto === null) {
+      aberto = calcularAbertura(agora).aberto;
+    }
+
+    var bol = document.getElementById('statusBolinha');
+    if (bol) bol.className = 'bolinha ' + (aberto ? 'aberto' : 'fechado');
+
+    var txt = document.getElementById('statusTexto');
+    if (txt) txt.textContent = aberto ? 'Aberto' : 'Fechado';
+
+    var msg = document.getElementById('statusMsg');
+    if (msg) msg.textContent = aberto ? 'Aberto agora' : 'Fechado no momento';
   } catch (e) { }
 }
-
 /* ---------- Carrinho ---------- */
 var carrinho = [];
 var carrinhoInstalado = false;
@@ -2443,6 +2373,29 @@ window.scrollTo({ top: 0, behavior: reduzMov ? 'auto' : 'smooth' });
 }
 
 /* ---------- Inicialização ---------- */
+   function carregarConfig() {
+  try {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
+
+    fetch(WORKER_URL + '/api/public/catalogo?t=' + Date.now(), {
+      cache: 'no-store',
+      signal: ctrl ? ctrl.signal : undefined
+    })
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (j) {
+        if (j && j.config) {
+          CONFIG_LOJA = j.config;
+          atualizarStatus();
+        }
+      })
+      .catch(function () { clearTimeout(to); });
+  } catch (e) { }
+}
 document.addEventListener('DOMContentLoaded', function () {
 try { criarBolhas(); } catch (e) { }
 try { iniciarCanvas(); } catch (e) { }
@@ -2453,7 +2406,7 @@ try { instalarAbas(); } catch (e) { }
 try { instalarTilt(); } catch (e) { }
 try { instalarContato(); } catch (e) { }
 try { atualizarBadge(false); renderizarCarrinho(); } catch (e) { }
-try { atualizarStatus(); carregarConfig(); setInterval(atualizarStatus, 60000); } catch (e) { }
+try { atualizarStatus(); carregarConfig(); setInterval(function () { carregarConfig(); }, 30000); } catch (e) { }
 try { iniciarLogo(); } catch (e) { }
 try { headerCompacto(); } catch (e) { }
 });
@@ -2468,7 +2421,7 @@ try { instalarAbas(); } catch (e) { }
 try { instalarTilt(); } catch (e) { }
 try { instalarContato(); } catch (e) { }
 try { atualizarBadge(false); renderizarCarrinho(); } catch (e) { }
-try { atualizarStatus(); carregarConfig(); setInterval(atualizarStatus, 60000); } catch (e) { }
+try { atualizarStatus(); carregarConfig(); setInterval(function () { carregarConfig(); }, 30000); } catch (e) { }
 try { iniciarLogo(); } catch (e) { }
 })();
 }
